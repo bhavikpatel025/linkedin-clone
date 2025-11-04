@@ -17,7 +17,7 @@ import { SignalrService } from './signalr.service';
 })
 export class NotificationService {
   
-  private apiUrl = 'https://localhost:7068/api/notifications';
+  private apiUrl = 'https://localhost:7068/api/notifications'; // your API endpoint
 
   // Add local BehaviorSubject to track unread count
   private currentUnreadCount = new BehaviorSubject<number>(0);

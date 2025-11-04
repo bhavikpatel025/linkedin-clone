@@ -63,6 +63,7 @@ namespace LinkedInApp.Services
             }
         }
 
+        //create notification
         public async Task<ApiResponse<NotificationDto>> CreateNotification(NotificationCreateDto notificationDto)
         {
             try
