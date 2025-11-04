@@ -1,0 +1,184 @@
+# ========================================
+# SECURITY FILES (IMPORTANT TO IGNORE)
+# ========================================
+LinkedInApp/appsettings.json                # Main appsettings file
+LinkedInApp/appsettings.Development.json    # Development config
+LinkedInApp/appsettings.Production.json     # Production config
+LinkedInApp/appsettings.Staging.json        # Staging config
+
+# Security Keys
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# ========================================
+# BACKEND (.NET) FILES
+# ========================================
+LinkedInApp/bin/
+LinkedInApp/obj/
+LinkedInApp/.vs/
+LinkedInApp/**/Generated Files/**
+LinkedInApp/**/_Upgrade/**
+LinkedInApp/packages/
+LinkedInApp/PublishProfiles/
+LinkedInApp/**/obj/Debug/
+LinkedInApp/**/obj/Release/
+LinkedInApp/**/ConfigurationFile/
+LinkedInApp/project.lock.json
+LinkedInApp/project.fragment.lock.json
+LinkedInApp/artifacts/
+LinkedInApp/**/Properties/launchSettings.json
+LinkedInApp/*.dll
+LinkedInApp/*.exe
+LinkedInApp/*.pdb
+LinkedInApp/*.cache
+LinkedInApp/*.suo
+LinkedInApp/*.user
+LinkedInApp/*.userosscache
+LinkedInApp/*.sln.docstates
+LinkedInApp/*.userprefs
+LinkedInApp/*.xsd.cs
+LinkedInApp/MigrationBackup/
+
+# ========================================
+# FRONTEND (ANGULAR) FILES
+# ========================================
+linkedin-app-frontend/node_modules/
+linkedin-app-frontend/.angular/
+linkedin-app-frontend/coverage/
+linkedin-app-frontend/dist/
+linkedin-app-frontend/tmp/
+linkedin-app-frontend/temp/
+linkedin-app-frontend/out-tsc/
+linkedin-app-frontend/bazel-out/
+linkedin-app-frontend/e2e/*.js
+linkedin-app-frontend/e2e/*.map
+
+# ========================================
+# OPERATING SYSTEM FILES
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ========================================
+# IDE/EDITOR SPECIFIC FILES
+# ========================================
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.vs/
+*.vspscc
+*.vsp
+*.vspx
+*.sln.ide/
+*.tmp
+*.swp
+*.swo
+*~
+.temp
+.sublime-project
+.sublime-workspace
+.vscode-st3
+.vscode
+.vscode-test
+.history/
+
+# ========================================
+# LOGS AND DATABASES
+# ========================================
+*.log
+*.log.*
+**/[Ll]ogs/*.log
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+
+# ========================================
+# COMPILED SOURCE
+# ========================================
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.obj
+
+# ========================================
+# PACKAGES
+# ========================================
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# ========================================
+# VISUAL STUDIO FILES
+# ========================================
+*.bak
+*.user
+*.suo
+*.tmp_proj
+**/[Dd]ebug/
+**/[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# ========================================
+# BACKUP FILES
+# ========================================
+*.bak
+backup/
+backups/
+*.backup
+backup*.zip
+backup*.tar.gz
+
+# ========================================
+# TEMPORARY FILES
+# ========================================
+*.tmp
+tmp/
+temp/
+
+# ========================================
+# DOCKER FILES
+# ========================================
+docker-compose.override.yml
+
+# ========================================
+# MISCELLANEOUS
+# ========================================
+.fusebox/
+.nyc_output/
+.sass-cache/
+.firebase/
+
+# ========================================
+# IGNORE ALL JSON FILES (IF NEEDED)
+# ========================================
+# linkedin-app-frontend/*.json (uncomment if you want to ignore all JSON files in linkedin-app-frontend)
+# LinkedInApp/*.json (uncomment if you want to ignore all JSON files in LinkedInApp)
