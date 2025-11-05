@@ -1,4 +1,5 @@
 ﻿using LinkedInApp.DTOs;
+using LinkedInApp.Models;
 
 namespace LinkedInApp.Services
 {
@@ -16,5 +17,10 @@ namespace LinkedInApp.Services
         Task<ApiResponse<ReplyDto>> AddReplyAsync(ReplyCreateDto replyDto);
         Task<ApiResponse<bool>> DeleteReplyAsync(int replyId, int userId);
         Task<ApiResponse<List<ReplyDto>>> GetRepliesByCommentIdAsync(int commentId);
+
+        Task<ApiResponse<SavePostResultDto>> SavePostAsync(SavePostRequestDto saveRequest);
+        Task<ApiResponse<bool>> UnsavePostAsync(int userId, int postId);
+        Task<ApiResponse<List<SavedPostDto>>> GetUserSavedPostsAsync(int userId);
+        Task<ApiResponse<bool>> IsPostSavedAsync(int userId, int postId);
     }
 }

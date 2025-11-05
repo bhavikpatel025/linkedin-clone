@@ -3,6 +3,7 @@ using LinkedInApp.Data;
 using LinkedInApp.DTOs;
 using LinkedInApp.Hubs;
 using LinkedInApp.Models;
+using LinkedInApp.Repositories;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,19 +16,22 @@ namespace LinkedInApp.Services
         private readonly IWebHostEnvironment _environment;
         private readonly INotificationService _notificationService;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ISavedPostRepository _savedPostRepository;
 
         public PostService(
             ApplicationDbContext context,
             IMapper mapper,
             IWebHostEnvironment environment,
             INotificationService notificationService,
-            IHubContext<NotificationHub> hubContext)
+            IHubContext<NotificationHub> hubContext,
+            ISavedPostRepository savedPostRepository)
         {
             _context = context;
             _mapper = mapper;
             _environment = environment;
             _notificationService = notificationService;
             _hubContext = hubContext;
+            _savedPostRepository = savedPostRepository;
         }
 
         public async Task<ApiResponse<PostDto>> CreatePostAsync(PostCreateDto postCreateDto)
@@ -221,6 +225,7 @@ namespace LinkedInApp.Services
                     .Include(p => p.Likes)
                     .Include(p => p.Comments)
                         .ThenInclude(c => c.User)
+                         .Include(p => p.SavedPosts)
                     .OrderByDescending(p => p.CreatedDate)
                     .ToListAsync();
 
@@ -240,6 +245,7 @@ namespace LinkedInApp.Services
                         CreatedDate = post.CreatedDate,
                         UpdatedDate = post.UpdatedDate,
                         LikesCount = post.Likes?.Count ?? 0,
+                        IsSavedByCurrentUser = post.SavedPosts?.Any(sp => sp.UserId == currentUserId) ?? false,
                         CommentsCount = post.Comments?.Count ?? 0,
                         IsLikedByCurrentUser = post.Likes?.Any(l => l.UserId == currentUserId) ?? false,
                         Comments = post.Comments?.Select(c => new CommentDto
@@ -318,6 +324,177 @@ namespace LinkedInApp.Services
             }
         }
 
+        public async Task<ApiResponse<SavePostResultDto>> SavePostAsync(SavePostRequestDto saveRequest)
+        {
+            try
+            {
+                // Verify user exists
+                var user = await _context.Users.FindAsync(saveRequest.UserId);
+                if (user == null)
+                {
+                    return new ApiResponse<SavePostResultDto>
+                    {
+                        Success = false,
+                        Message = "User not found"
+                    };
+                }
+
+                // Verify post exists
+                var post = await _context.Posts.FindAsync(saveRequest.PostId);
+                if (post == null)
+                {
+                    return new ApiResponse<SavePostResultDto>
+                    {
+                        Success = false,
+                        Message = "Post not found"
+                    };
+                }
+
+                var savedPost = new SavedPost
+                {
+                    UserId = saveRequest.UserId,
+                    PostId = saveRequest.PostId,
+                    SavedAt = DateTime.UtcNow
+                };
+
+                var result = await _savedPostRepository.SavePostAsync(savedPost);
+
+                var simpleResponse = new SavePostResultDto
+                {
+                    Id = result.Id,
+                    UserId = result.UserId,
+                    PostId = result.PostId,
+                    SavedAt = result.SavedAt
+                    // Don't include Post or User navigation properties
+                };
+
+                return new ApiResponse<SavePostResultDto>
+                {
+                    Success = true,
+                    Message = "Post saved successfully",
+                    Data = simpleResponse
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<SavePostResultDto>
+                {
+                    Success = false,
+                    Message = $"Error saving post: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ApiResponse<bool>> UnsavePostAsync(int userId, int postId)
+        {
+            try
+            {
+                var result = await _savedPostRepository.UnsavePostAsync(userId, postId);
+
+                if (!result)
+                {
+                    return new ApiResponse<bool>
+                    {
+                        Success = false,
+                        Message = "Saved post not found"
+                    };
+                }
+
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Message = "Post unsaved successfully",
+                    Data = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = $"Error unsaving post: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ApiResponse<List<SavedPostDto>>> GetUserSavedPostsAsync(int userId)
+        {
+            try
+            {
+                var savedPosts = await _savedPostRepository.GetUserSavedPostsAsync(userId);
+
+                var savedPostDtos = savedPosts.Select(sp => new SavedPostDto
+                {
+                    Id = sp.Id,
+                    UserId = sp.UserId,
+                    PostId = sp.PostId,
+                    SavedAt = sp.SavedAt,
+                    Post = new PostDto
+                    {
+                        Id = sp.Post.Id,
+                        UserId = sp.Post.UserId,
+                        UserName = sp.Post.User?.Name ?? "Unknown User",
+                        RoleName = sp.Post.User?.Role?.Name ?? "User",
+                        UserProfilePicture = sp.Post.User?.ProfilePicture ?? string.Empty,
+                        Description = sp.Post.Description ?? string.Empty,
+                        PhotoPath = sp.Post.PhotoPath,
+                        CreatedDate = sp.Post.CreatedDate,
+                        UpdatedDate = sp.Post.UpdatedDate,
+                        LikesCount = sp.Post.Likes?.Count ?? 0,
+                        CommentsCount = sp.Post.Comments?.Count ?? 0,
+                        IsLikedByCurrentUser = false, // You might want to calculate this
+                        IsSavedByCurrentUser = true, // Since it's in saved posts
+                        Comments = sp.Post.Comments?.Select(c => new CommentDto
+                        {
+                            Id = c.Id,
+                            Content = c.Content ?? string.Empty,
+                            CreatedDate = c.CreatedDate,
+                            UserId = c.UserId,
+                            UserName = c.User?.Name ?? "Unknown User",
+                            UserProfilePicture = c.User?.ProfilePicture ?? string.Empty
+                        }).ToList() ?? new List<CommentDto>()
+                    }
+                }).ToList();
+
+                return new ApiResponse<List<SavedPostDto>>
+                {
+                    Success = true,
+                    Message = "Saved posts retrieved successfully",
+                    Data = savedPostDtos
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<List<SavedPostDto>>
+                {
+                    Success = false,
+                    Message = $"Error retrieving saved posts: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<ApiResponse<bool>> IsPostSavedAsync(int userId, int postId)
+        {
+            try
+            {
+                var isSaved = await _savedPostRepository.IsPostSavedByUserAsync(userId, postId);
+
+                return new ApiResponse<bool>
+                {
+                    Success = true,
+                    Message = "Saved status retrieved successfully",
+                    Data = isSaved
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ApiResponse<bool>
+                {
+                    Success = false,
+                    Message = $"Error checking saved status: {ex.Message}"
+                };
+            }
+        }
         public async Task<ApiResponse<bool>> ToggleLikeAsync(LikeDto likeDto)
         {
             try

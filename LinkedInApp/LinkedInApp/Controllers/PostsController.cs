@@ -102,6 +102,94 @@ namespace LinkedInApp.Controllers
             return BadRequest(result);
         }
 
+        [HttpPost("save")]
+        public async Task<IActionResult> SavePost([FromBody] SavePostRequestDto saveRequest)
+        {
+            try
+            {
+                var result = await _postService.SavePostAsync(saveRequest);
+                if (!result.Success)
+                    return BadRequest(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Internal server error",
+                    Errors = new List<string> { ex.Message }
+                });
+            }
+        }
+
+        [HttpDelete("unsave/{userId}/{postId}")]
+        public async Task<IActionResult> UnsavePost(int userId, int postId)
+        {
+            try
+            {
+                var result = await _postService.UnsavePostAsync(userId, postId);
+                if (!result.Success)
+                    return BadRequest(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Internal server error",
+                    Errors = new List<string> { ex.Message }
+                });
+            }
+        }
+
+        [HttpGet("saved/{userId}")]
+        public async Task<IActionResult> GetUserSavedPosts(int userId)
+        {
+            try
+            {
+                var result = await _postService.GetUserSavedPostsAsync(userId);
+                if (!result.Success)
+                    return BadRequest(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Internal server error",
+                    Errors = new List<string> { ex.Message }
+                });
+            }
+        }
+
+        [HttpGet("is-saved/{userId}/{postId}")]
+        public async Task<IActionResult> IsPostSaved(int userId, int postId)
+        {
+            try
+            {
+                var result = await _postService.IsPostSavedAsync(userId, postId);
+                if (!result.Success)
+                    return BadRequest(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Internal server error",
+                    Errors = new List<string> { ex.Message }
+                });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<ActionResult<ApiResponse<bool>>> DeletePost(int id, [FromQuery] int userId)
         {

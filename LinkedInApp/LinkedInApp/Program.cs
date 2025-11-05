@@ -1,6 +1,7 @@
 using LinkedInApp.Data;
 using LinkedInApp.Hubs;
 using LinkedInApp.Profiles;
+using LinkedInApp.Repositories;
 using LinkedInApp.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -49,6 +50,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISavedPostRepository, SavedPostRepository>();
 
 builder.Services.AddLogging();
 

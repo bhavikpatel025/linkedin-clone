@@ -39,8 +39,8 @@ namespace LinkedInApp.Profiles
                 .ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count))
                 .ForMember(dest => dest.IsLikedByCurrentUser, opt => opt.Ignore())
                 .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments));
-    //            .ForMember(dest => dest.LikesCount, opt => opt.MapFrom(src => src.Likes.Count))
-    //.ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count));
+            //            .ForMember(dest => dest.LikesCount, opt => opt.MapFrom(src => src.Likes.Count))
+            //.ForMember(dest => dest.CommentsCount, opt => opt.MapFrom(src => src.Comments.Count));
 
 
             // Comment mappings
@@ -87,6 +87,9 @@ namespace LinkedInApp.Profiles
                 .ForMember(dest => dest.MutualConnections, opt => opt.Ignore())
                 .ForMember(dest => dest.ConnectionStatus, opt => opt.Ignore())
                 .ForMember(dest => dest.CanConnect, opt => opt.Ignore());
+
+            CreateMap<SavePostRequestDto, SavedPost>();
+            CreateMap<SavedPost, SavedPostDto>();
         }
     }
 }

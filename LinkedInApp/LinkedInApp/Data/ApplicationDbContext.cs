@@ -14,6 +14,7 @@ namespace LinkedInApp.Data
         public DbSet<Skill> Skills { get; set; }
         public DbSet<UserSkill> UserSkills { get; set; }
         public DbSet<Post> Posts { get; set; }
+        public DbSet<SavedPost> SavedPosts { get; set; }
         public DbSet<Like> Likes { get; set; }
         public DbSet<Comment> Comments { get; set; }
         public DbSet<Reply> Replies { get; set; }
@@ -67,6 +68,31 @@ namespace LinkedInApp.Data
                 .WithMany(u => u.Posts)
                 .HasForeignKey(p => p.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SavedPost>(entity =>
+            {
+                entity.HasKey(sp => sp.Id);
+
+                // Unique constraint to prevent duplicate saves
+                entity.HasIndex(sp => new { sp.UserId, sp.PostId })
+                      .IsUnique();
+
+                // Relationship: User can save multiple posts - CHANGE TO Restrict or NoAction
+                entity.HasOne(sp => sp.User)
+                      .WithMany(u => u.SavedPosts)
+                      .HasForeignKey(sp => sp.UserId)
+                      .OnDelete(DeleteBehavior.Restrict); // CHANGED FROM Cascade
+
+                // Relationship: Post can be saved by multiple users - CHANGE TO Restrict or NoAction
+                entity.HasOne(sp => sp.Post)
+                      .WithMany(p => p.SavedPosts)
+                      .HasForeignKey(sp => sp.PostId)
+                      .OnDelete(DeleteBehavior.Restrict); // CHANGED FROM Cascade
+
+                // Configure dates
+                entity.Property(sp => sp.SavedAt)
+                      .HasDefaultValueSql("GETUTCDATE()");
+            });
 
             // Configure Like relationships
             modelBuilder.Entity<Like>()

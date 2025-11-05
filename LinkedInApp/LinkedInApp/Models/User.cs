@@ -63,7 +63,8 @@ namespace LinkedInApp.Models
         public virtual ICollection<Connection> SentConnections { get; set; } = new List<Connection>();
         public virtual ICollection<Connection> ReceivedConnections { get; set; } = new List<Connection>();
 
-        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();       
+        public virtual ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
+        public virtual ICollection<SavedPost> SavedPosts { get; set; } = new List<SavedPost>();
     }
 }
