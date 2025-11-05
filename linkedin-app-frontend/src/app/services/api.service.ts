@@ -19,7 +19,10 @@ import {
   Reply,
   ReplyDeleteResponse,
   UserUpdate,
-  ProfilePictureUpdate
+  ProfilePictureUpdate,
+  SavePostRequest,
+  SavedPostResponse,
+  UserSavedPostsResponse
 } from '../models/models';
 
 @Injectable({
@@ -66,7 +69,7 @@ export class ApiService {
     return this.http.get<ApiResponse<User>>(`${this.baseUrl}/users/${id}`);
   }
 
-  // ✅ ADDED - Profile Picture Methods (FIXED URLs)
+  //  Profile Picture Methods 
   updateProfilePicture(updateData: ProfilePictureUpdate): Observable<ApiResponse<User>> {
     const formData = new FormData();
     formData.append('userId', updateData.userId.toString());
@@ -139,6 +142,22 @@ export class ApiService {
     return this.http.delete<ApiResponse<boolean>>(`${this.baseUrl}/posts/${postId}`, { params });
   }
 
+   savePost(saveData: SavePostRequest): Observable<SavedPostResponse> {
+    return this.http.post<SavedPostResponse>(`${this.baseUrl}/posts/save`, saveData);
+  }
+
+  unsavePost(userId: number, postId: number): Observable<ApiResponse<boolean>> {
+    return this.http.delete<ApiResponse<boolean>>(`${this.baseUrl}/posts/unsave/${userId}/${postId}`);
+  }
+
+  getUserSavedPosts(userId: number): Observable<UserSavedPostsResponse> {
+    return this.http.get<UserSavedPostsResponse>(`${this.baseUrl}/posts/saved/${userId}`);
+  }
+
+  isPostSaved(userId: number, postId: number): Observable<ApiResponse<boolean>> {
+    return this.http.get<ApiResponse<boolean>>(`${this.baseUrl}/posts/is-saved/${userId}/${postId}`);
+  }
+
   toggleLike(likeData: Like): Observable<ApiResponse<boolean>> {
     return this.http.post<ApiResponse<boolean>>(`${this.baseUrl}/posts/like`, likeData);
   }
@@ -169,7 +188,7 @@ export class ApiService {
     );
   }
 
-  getImageUrl(imagePath: string): string {
+  getImageUrl(imagePath: string | undefined): string {
     if (!imagePath) return '';
     
     // If it's already a full URL, return as is

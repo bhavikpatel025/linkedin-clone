@@ -18,6 +18,7 @@ import {
   Comment,
   Reply,
   ReplyCreate,
+  SavePostRequest,
 } from '../../models/models';
 import Swal from 'sweetalert2';
 
@@ -41,12 +42,16 @@ declare var $: any;
                   <div class="profile-content pt-4 px-3 pb-3">
                     <div class="profile-avatar mb-2">
                       <div class="avatar-container">
-  @if (currentUserProfilePicture) {
-    <img [src]="currentUserProfilePicture" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle"></i>
-  }
-</div>
+                        @if (currentUserProfilePicture) {
+                        <img
+                          [src]="currentUserProfilePicture"
+                          alt="Profile"
+                          class="avatar-image"
+                        />
+                        } @else {
+                        <i class="bi bi-person-circle"></i>
+                        }
+                      </div>
                     </div>
                     <h6 class="mb-1 fw-bold text-dark">
                       {{ currentUser?.name }}
@@ -93,10 +98,10 @@ declare var $: any;
               <!-- Saved Items -->
               <div class="saved-card card border-0 shadow-sm">
                 <div class="card-body p-0">
-                  <div class="saved-item p-3 border-bottom">
-                    <i class="bi bi-bookmark me-2 text-muted"></i>
-                    <span class="small">Saved Items</span>
-                  </div>
+                 <div class="saved-item p-3 border-bottom" routerLink="/saved-posts" style="cursor: pointer;">
+  <i class="bi bi-bookmark me-2 text-muted"></i>
+  <span class="small">Saved Items</span>
+</div>
                   <div class="saved-item p-3 border-bottom">
                     <i class="bi bi-people me-2 text-muted"></i>
                     <span class="small">Groups</span>
@@ -121,12 +126,16 @@ declare var $: any;
               <div class="card-body p-3">
                 <div class="d-flex align-items-center">
                   <div class="user-avatar-small me-2">
-  @if (currentUserProfilePicture) {
-    <img [src]="currentUserProfilePicture" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle"></i>
-  }
-</div>
+                    @if (currentUserProfilePicture) {
+                    <img
+                      [src]="currentUserProfilePicture"
+                      alt="Profile"
+                      class="avatar-image"
+                    />
+                    } @else {
+                    <i class="bi bi-person-circle"></i>
+                    }
+                  </div>
                   <button
                     class="btn btn-light btn-hover flex-grow-1 text-start text-muted"
                     routerLink="/create-post"
@@ -198,13 +207,17 @@ declare var $: any;
                         class="post-header d-flex justify-content-between align-items-start mb-2"
                       >
                         <div class="d-flex align-items-center">
-                         <div class="user-avatar-small me-2">
-  @if (post.userProfilePicture) {
-    <img [src]="getImageUrl(post.userProfilePicture)" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle"></i>
-  }
-</div>
+                          <div class="user-avatar-small me-2">
+                            @if (post.userProfilePicture) {
+                            <img
+                              [src]="getImageUrl(post.userProfilePicture)"
+                              alt="Profile"
+                              class="avatar-image"
+                            />
+                            } @else {
+                            <i class="bi bi-person-circle"></i>
+                            }
+                          </div>
                           <div>
                             <h6 class="mb-0 fw-bold">{{ post.userName }}</h6>
                             <small class="text-muted">{{
@@ -219,39 +232,61 @@ declare var $: any;
                             </span>
                           </div>
                         </div>
-                        <div
-                          class="dropdown"
-                          *ngIf="post.userId === currentUser?.id"
-                        >
-                          <button
-                            class="btn btn-link text-muted p-0"
-                            type="button"
-                            data-bs-toggle="dropdown"
-                          >
-                            <i class="bi bi-three-dots"></i>
-                          </button>
-                          <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                              <a
-                                class="dropdown-item small"
-                                [routerLink]="['/edit-post', post.id]"
-                              >
-                                <i class="bi bi-pencil me-2"></i>
-                                Edit
-                              </a>
-                            </li>
-                            <li>
-                              <a
-                                class="dropdown-item small text-danger"
-                                href="#"
-                                (click)="deletePost($event, post.id)"
-                              >
-                                <i class="bi bi-trash me-2"></i>
-                                Delete
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
+                        <!-- Post Header Dropdown -->
+<div class="dropdown">
+  <button
+    class="btn btn-link text-muted p-0"
+    type="button"
+    data-bs-toggle="dropdown"
+  >
+    <i class="bi bi-three-dots"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <!-- For current user's posts - Show Edit/Delete -->
+    <li *ngIf="post.userId === currentUser?.id">
+      <a
+        class="dropdown-item small"
+        [routerLink]="['/edit-post', post.id]"
+      >
+        <i class="bi bi-pencil me-2"></i>
+        Edit
+      </a>
+    </li>
+    <li *ngIf="post.userId === currentUser?.id">
+      <a
+        class="dropdown-item small text-danger"
+        href="#"
+        (click)="deletePost($event, post.id)"
+      >
+        <i class="bi bi-trash me-2"></i>
+        Delete
+      </a>
+    </li>
+    
+    <!-- For other users' posts - Show Save/Unsave -->
+    <li *ngIf="post.userId !== currentUser?.id">
+      <a
+        class="dropdown-item small"
+        href="#"
+        (click)="toggleSavePost($event, post)"
+      >
+        <i 
+          [class]="post.isSavedByCurrentUser ? 'bi bi-bookmark-fill text-primary me-2' : 'bi bi-bookmark me-2'"
+        ></i>
+        {{ post.isSavedByCurrentUser ? 'Unsave Post' : 'Save Post' }}
+      </a>
+    </li>
+    
+    <!-- Common options for all posts -->
+    <!-- <li><hr class="dropdown-divider"></li>
+    <li>
+      <a class="dropdown-item small" href="#">
+        <i class="bi bi-flag me-2"></i>
+        Report post
+      </a>
+    </li> -->
+  </ul>
+</div>
                       </div>
 
                       <!-- Post Content -->
@@ -338,12 +373,18 @@ declare var $: any;
                           >
                             <div class="d-flex">
                               <div class="comment-avatar me-2">
-  @if (comment.userProfilePicture) {
-    <img [src]="getImageUrl(comment.userProfilePicture)" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle"></i>
-  }
-</div>
+                                @if (comment.userProfilePicture) {
+                                <img
+                                  [src]="
+                                    getImageUrl(comment.userProfilePicture)
+                                  "
+                                  alt="Profile"
+                                  class="avatar-image"
+                                />
+                                } @else {
+                                <i class="bi bi-person-circle"></i>
+                                }
+                              </div>
                               <div class="comment-content flex-grow-1">
                                 <div
                                   class="comment-header d-flex justify-content-between align-items-start"
@@ -461,12 +502,23 @@ declare var $: any;
                                     >
                                       <div class="d-flex">
                                         <div class="reply-avatar me-2">
-  @if (reply.userProfilePicture) {
-    <img [src]="getImageUrl(reply.userProfilePicture)" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle text-muted" style="font-size: 1.2rem;"></i>
-  }
-</div>
+                                          @if (reply.userProfilePicture) {
+                                          <img
+                                            [src]="
+                                              getImageUrl(
+                                                reply.userProfilePicture
+                                              )
+                                            "
+                                            alt="Profile"
+                                            class="avatar-image"
+                                          />
+                                          } @else {
+                                          <i
+                                            class="bi bi-person-circle text-muted"
+                                            style="font-size: 1.2rem;"
+                                          ></i>
+                                          }
+                                        </div>
                                         <div class="reply-content flex-grow-1">
                                           <div
                                             class="reply-header d-flex justify-content-between align-items-start"
@@ -610,476 +662,475 @@ declare var $: any;
   styles: [
     `
       .dashboard-container {
-  min-height: 100vh;
-  background-color: #f3f2ef;
-  padding: 20px 20px 20px 20px;
-}
-
-.sticky-sidebar {
-  position: sticky;
-  top: 80px;
-  height: calc(100vh - 100px);
-  overflow-y: auto;
-}
-
-.sticky-sidebar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.sticky-sidebar::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.sticky-sidebar::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.sticky-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-.card {
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-/* Profile Card Styles */
-.profile-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.card-background {
-  height: 56px;
-  background-color: #a0b4b7;
-  border-radius: 8px 8px 0 0;
-}
-
-.profile-content {
-  margin-top: -40px;
-}
-
-.avatar-container {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: white;
-  border: 4px solid white;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden; /* ✅ ADDED for profile pictures */
-}
-
-.profile-avatar {
-  font-size: 3.5rem;
-  color: #0a66c2;
-}
-
-.user-avatar-small {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #eef3f8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: #0a66c2;
-  overflow: hidden; /* ✅ ADDED for profile pictures */
-}
-
-.company-avatar {
-  font-size: 2rem;
-  color: #0a66c2;
-  background: #eef3f8;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.comment-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #eef3f8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  color: #0a66c2;
-  overflow: hidden; /* ✅ ADDED for profile pictures */
-}
-
-.reply-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #f8f9fa;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  color: #6c757d;
-  overflow: hidden; /* ✅ ADDED for profile pictures */
-}
-
-/* ✅ ADDED: Profile Picture Image Styles */
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Button Styles */
-.btn-hover:hover {
-  background-color: #eef3f8 !important;
-}
-
-.btn-post-option {
-  background: transparent;
-  border: none;
-  color: #666;
-  font-size: 0.8rem;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-}
-
-.btn-post-option:hover {
-  background-color: #f3f2ef;
-  color: #000;
-}
-
-.action-btn {
-  background: transparent;
-  border: none;
-  color: #666;
-  font-weight: 500;
-  font-size: 0.85rem;
-  transition: all 0.3s ease;
-  padding: 6px 12px;
-  border-radius: 4px;
-}
-
-.action-btn:hover {
-  background-color: #f3f2ef;
-  color: #0a66c2;
-}
-
-.action-btn.text-primary {
-  color: #0a66c2;
-}
-
-/* Premium Card */
-.premium-card {
-  background: linear-gradient(135deg, #fef6e6 0%, #fdf2d8 100%);
-}
-
-/* Saved Items */
-.saved-item {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.saved-item:hover {
-  background-color: #f8f9fa;
-}
-
-/* Text Styles */
-.post-text-container {
-  display: block;
-  line-height: 1.4;
-}
-
-.post-text {
-  font-size: 0.9rem;
-  line-height: 1.4;
-  white-space: pre-line;
-  word-wrap: break-word;
-  display: inline;
-}
-
-.post-text.truncated {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-height: 2.8em;
-  line-height: 1.4em;
-}
-
-.btn-show-more {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #0a66c2;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  display: inline;
-}
-
-.btn-show-more:hover {
-  background-color: transparent !important;
-  text-decoration: underline !important;
-}
-
-.x-small {
-  font-size: 0.75rem;
-}
-
-/* Post Image */
-.post-image img {
-  max-height: 400px;
-  width: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-  margin-top: 8px;
-}
-
-/* Comments Section */
-.comments-section {
-  background-color: #f8f9fa;
-  padding: 12px;
-  border-radius: 8px;
-}
-
-.comment {
-  background-color: white;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
-}
-
-.add-comment-form .form-control {
-  border: 1px solid #cfd0d2;
-}
-
-/* Reply Styles */
-.reply {
-  background-color: #f8f9fa;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #e9ecef;
-}
-
-.reply-form {
-  border-left: 3px solid #0a66c2;
-  padding-left: 12px;
-}
-
-.add-reply-form .form-control {
-  border: 1px solid #cfd0d2;
-  font-size: 0.8rem;
-}
-
-.comment-actions .btn-link {
-  text-decoration: none;
-  font-size: 0.8rem;
-}
-
-.comment-actions .btn-link:hover {
-  text-decoration: underline;
-}
-
-.replies-section {
-  border-left: 2px solid #dee2e6;
-  padding-left: 12px;
-}
-
-/* Reply delete button styles */
-.reply-header .btn-link {
-  text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.reply-header .btn-link:hover {
-  opacity: 1;
-  background-color: transparent !important;
-}
-
-/* News & Puzzles */
-.news-item,
-.puzzle-item {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  border-radius: 4px;
-}
-
-.news-item:hover,
-.puzzle-item:hover {
-  background-color: #f8f9fa;
-}
-
-.profile-stats {
-  font-size: 0.8rem;
-}
-
-/* Empty State */
-.empty-state i {
-  opacity: 0.5;
-}
-
-/* Animations */
-.post-card {
-  animation: fadeInUp 0.3s ease-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Dropdown */
-.dropdown-menu {
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-}
-
-.badge {
-  font-size: 0.65rem;
-  padding: 2px 6px;
-}
-
-/* Main content scrollable */
-.col-lg-6 {
-  max-height: calc(100vh - 100px);
-  overflow-y: auto;
-}
-
-.col-lg-6::-webkit-scrollbar {
-  width: 6px;
-}
-
-.col-lg-6::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.col-lg-6::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
-}
-
-.col-lg-6::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Comment delete button styles */
-.comment-header .btn-link {
-  text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.comment-header .btn-link:hover {
-  opacity: 1;
-  background-color: transparent !important;
-}
-
-.comment:hover .comment-header .btn-link {
-  opacity: 0.7;
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .comment-header .btn-link {
-    opacity: 0.7; /* Always show on mobile for better UX */
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .dashboard-container {
-    padding: 60px 10px 10px 10px;
-  }
-
-  .user-avatar-small {
-    width: 40px;
-    height: 40px;
-    font-size: 1.8rem;
-  }
-
-  .comment-avatar {
-    width: 28px;
-    height: 28px;
-    font-size: 1.3rem;
-  }
-
-  .reply-avatar {
-    width: 24px;
-    height: 24px;
-    font-size: 1rem;
-  }
-
-  .post-image img {
-    max-height: 300px;
-  }
-
-  .action-btn {
-    font-size: 0.8rem;
-    padding: 4px 8px;
-  }
-
-  .col-lg-6 {
-    max-height: none;
-    overflow-y: visible;
-  }
-
-  .post-text.truncated {
-    max-height: 2.8em;
-    -webkit-line-clamp: 2;
-  }
-
-  .avatar-container {
-    width: 60px;
-    height: 60px;
-  }
-}
-
-/* ✅ ADDED: Enhanced responsive styles for profile pictures */
-@media (max-width: 576px) {
-  .avatar-container {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .user-avatar-small {
-    width: 36px;
-    height: 36px;
-    font-size: 1.6rem;
-  }
-  
-  .comment-avatar {
-    width: 24px;
-    height: 24px;
-    font-size: 1.1rem;
-  }
-  
-  .reply-avatar {
-    width: 20px;
-    height: 20px;
-    font-size: 0.9rem;
-  }
-}
-      
+        min-height: 100vh;
+        background-color: #f3f2ef;
+        padding: 20px 20px 20px 20px;
+      }
+
+      .sticky-sidebar {
+        position: sticky;
+        top: 80px;
+        height: calc(100vh - 100px);
+        overflow-y: auto;
+      }
+
+      .sticky-sidebar::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .sticky-sidebar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      .sticky-sidebar::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+      }
+
+      .sticky-sidebar::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+
+      .card {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+
+      /* Profile Card Styles */
+      .profile-card {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card-background {
+        height: 56px;
+        background-color: #a0b4b7;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .profile-content {
+        margin-top: -40px;
+      }
+
+      .avatar-container {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: white;
+        border: 4px solid white;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden; /* ✅ ADDED for profile pictures */
+      }
+
+      .profile-avatar {
+        font-size: 3.5rem;
+        color: #0a66c2;
+      }
+
+      .user-avatar-small {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #eef3f8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #0a66c2;
+        overflow: hidden; /* ✅ ADDED for profile pictures */
+      }
+
+      .company-avatar {
+        font-size: 2rem;
+        color: #0a66c2;
+        background: #eef3f8;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .comment-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #eef3f8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #0a66c2;
+        overflow: hidden; /* ✅ ADDED for profile pictures */
+      }
+
+      .reply-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #6c757d;
+        overflow: hidden; /* ✅ ADDED for profile pictures */
+      }
+
+      /* ✅ ADDED: Profile Picture Image Styles */
+      .avatar-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* Button Styles */
+      .btn-hover:hover {
+        background-color: #eef3f8 !important;
+      }
+
+      .btn-post-option {
+        background: transparent;
+        border: none;
+        color: #666;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-post-option:hover {
+        background-color: #f3f2ef;
+        color: #000;
+      }
+
+      .action-btn {
+        background: transparent;
+        border: none;
+        color: #666;
+        font-weight: 500;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        padding: 6px 12px;
+        border-radius: 4px;
+      }
+
+      .action-btn:hover {
+        background-color: #f3f2ef;
+        color: #0a66c2;
+      }
+
+      .action-btn.text-primary {
+        color: #0a66c2;
+      }
+
+      /* Premium Card */
+      .premium-card {
+        background: linear-gradient(135deg, #fef6e6 0%, #fdf2d8 100%);
+      }
+
+      /* Saved Items */
+      .saved-item {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+      }
+
+      .saved-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      /* Text Styles */
+      .post-text-container {
+        display: block;
+        line-height: 1.4;
+      }
+
+      .post-text {
+        font-size: 0.9rem;
+        line-height: 1.4;
+        white-space: pre-line;
+        word-wrap: break-word;
+        display: inline;
+      }
+
+      .post-text.truncated {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-height: 2.8em;
+        line-height: 1.4em;
+      }
+
+      .btn-show-more {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: #0a66c2;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        display: inline;
+      }
+
+      .btn-show-more:hover {
+        background-color: transparent !important;
+        text-decoration: underline !important;
+      }
+
+      .x-small {
+        font-size: 0.75rem;
+      }
+
+      /* Post Image */
+      .post-image img {
+        max-height: 400px;
+        width: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-top: 8px;
+      }
+
+      /* Comments Section */
+      .comments-section {
+        background-color: #f8f9fa;
+        padding: 12px;
+        border-radius: 8px;
+      }
+
+      .comment {
+        background-color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+
+      .add-comment-form .form-control {
+        border: 1px solid #cfd0d2;
+      }
+
+      /* Reply Styles */
+      .reply {
+        background-color: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+      }
+
+      .reply-form {
+        border-left: 3px solid #0a66c2;
+        padding-left: 12px;
+      }
+
+      .add-reply-form .form-control {
+        border: 1px solid #cfd0d2;
+        font-size: 0.8rem;
+      }
+
+      .comment-actions .btn-link {
+        text-decoration: none;
+        font-size: 0.8rem;
+      }
+
+      .comment-actions .btn-link:hover {
+        text-decoration: underline;
+      }
+
+      .replies-section {
+        border-left: 2px solid #dee2e6;
+        padding-left: 12px;
+      }
+
+      /* Reply delete button styles */
+      .reply-header .btn-link {
+        text-decoration: none;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+      }
+
+      .reply-header .btn-link:hover {
+        opacity: 1;
+        background-color: transparent !important;
+      }
+
+      /* News & Puzzles */
+      .news-item,
+      .puzzle-item {
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-radius: 4px;
+      }
+
+      .news-item:hover,
+      .puzzle-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      .profile-stats {
+        font-size: 0.8rem;
+      }
+
+      /* Empty State */
+      .empty-state i {
+        opacity: 0.5;
+      }
+
+      /* Animations */
+      .post-card {
+        animation: fadeInUp 0.3s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Dropdown */
+      .dropdown-menu {
+        border: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+      }
+
+      .badge {
+        font-size: 0.65rem;
+        padding: 2px 6px;
+      }
+
+      /* Main content scrollable */
+      .col-lg-6 {
+        max-height: calc(100vh - 100px);
+        overflow-y: auto;
+      }
+
+      .col-lg-6::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .col-lg-6::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      .col-lg-6::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+      }
+
+      .col-lg-6::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+      }
+
+      /* Comment delete button styles */
+      .comment-header .btn-link {
+        text-decoration: none;
+        opacity: 0.7;
+        transition: opacity 0.2s ease;
+      }
+
+      .comment-header .btn-link:hover {
+        opacity: 1;
+        background-color: transparent !important;
+      }
+
+      .comment:hover .comment-header .btn-link {
+        opacity: 0.7;
+      }
+
+      /* Mobile responsive */
+      @media (max-width: 768px) {
+        .comment-header .btn-link {
+          opacity: 0.7; /* Always show on mobile for better UX */
+        }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .dashboard-container {
+          padding: 60px 10px 10px 10px;
+        }
+
+        .user-avatar-small {
+          width: 40px;
+          height: 40px;
+          font-size: 1.8rem;
+        }
+
+        .comment-avatar {
+          width: 28px;
+          height: 28px;
+          font-size: 1.3rem;
+        }
+
+        .reply-avatar {
+          width: 24px;
+          height: 24px;
+          font-size: 1rem;
+        }
+
+        .post-image img {
+          max-height: 300px;
+        }
+
+        .action-btn {
+          font-size: 0.8rem;
+          padding: 4px 8px;
+        }
+
+        .col-lg-6 {
+          max-height: none;
+          overflow-y: visible;
+        }
+
+        .post-text.truncated {
+          max-height: 2.8em;
+          -webkit-line-clamp: 2;
+        }
+
+        .avatar-container {
+          width: 60px;
+          height: 60px;
+        }
+      }
+
+      /* Enhanced responsive styles for profile pictures */
+      @media (max-width: 576px) {
+        .avatar-container {
+          width: 50px;
+          height: 50px;
+        }
+
+        .user-avatar-small {
+          width: 36px;
+          height: 36px;
+          font-size: 1.6rem;
+        }
+
+        .comment-avatar {
+          width: 24px;
+          height: 24px;
+          font-size: 1.1rem;
+        }
+
+        .reply-avatar {
+          width: 20px;
+          height: 20px;
+          font-size: 0.9rem;
+        }
+      }
     `,
   ],
 })
@@ -1090,10 +1141,11 @@ export class DashboardComponent implements OnInit {
   showCommentsForPost: number | null = null;
   commentForms: Map<number, FormGroup> = new Map();
   replyForms: Map<number, FormGroup> = new Map();
-   currentUserProfilePicture: string = '';
+  currentUserProfilePicture: string = '';
 
   // Track which posts are truncated
   truncatedPosts: Set<number> = new Set();
+   savedPosts: Set<number> = new Set();
 
   // Connection count property
   connectionCount: number = 0;
@@ -1125,7 +1177,8 @@ export class DashboardComponent implements OnInit {
   ngOnInit() {
     this.loadPosts();
     this.loadConnectionCount();
-     this.loadCurrentUserProfilePicture();
+    this.loadCurrentUserProfilePicture();
+     this.loadUserSavedPosts();
   }
 
   // Method to load connection count
@@ -1145,22 +1198,110 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  loadCurrentUserProfilePicture(): void {
-  if (this.currentUser) {
-    this.apiService.getUserById(this.currentUser.id).subscribe({
+  loadUserSavedPosts(): void {
+    const userId = this.authService.getCurrentUserId();
+    this.apiService.getUserSavedPosts(userId).subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          this.currentUserProfilePicture = response.data.profilePicture 
-            ? this.apiService.getImageUrl(response.data.profilePicture)
-            : '';
+          // Store saved post IDs for quick lookup
+          response.data.forEach(savedPost => {
+            this.savedPosts.add(savedPost.postId);
+          });
+          
+          // Update posts with saved status
+          this.posts.forEach(post => {
+            post.isSavedByCurrentUser = this.savedPosts.has(post.id);
+          });
         }
       },
       error: (error) => {
-        console.error('Error loading user profile picture:', error);
+        console.error('Error loading saved posts:', error);
       }
     });
   }
-}
+
+    toggleSavePost(event: Event, post: Post): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const userId = this.authService.getCurrentUserId();
+
+    if (post.isSavedByCurrentUser) {
+      // Unsave post
+      this.apiService.unsavePost(userId, post.id).subscribe({
+        next: (response) => {
+          if (response.success) {
+            post.isSavedByCurrentUser = false;
+            this.savedPosts.delete(post.id);
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Post Unsaved',
+              text: 'Post removed from your saved items',
+              timer: 1500,
+              showConfirmButton: false,
+            });
+          }
+        },
+        error: (error) => {
+          console.error('Error unsaving post:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to unsave post',
+          });
+        }
+      });
+    } else {
+      // Save post
+      const saveData: SavePostRequest = {
+        userId: userId,
+        postId: post.id
+      };
+
+      this.apiService.savePost(saveData).subscribe({
+        next: (response) => {
+          if (response.success) {
+            post.isSavedByCurrentUser = true;
+            this.savedPosts.add(post.id);
+            
+            Swal.fire({
+              icon: 'success',
+              title: 'Post Saved',
+              text: 'Post added to your saved items',
+              timer: 1500,
+              showConfirmButton: false,
+            });
+          }
+        },
+        error: (error) => {
+          console.error('Error saving post:', error);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to save post',
+          });
+        }
+      });
+    }
+  }
+
+  loadCurrentUserProfilePicture(): void {
+    if (this.currentUser) {
+      this.apiService.getUserById(this.currentUser.id).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.currentUserProfilePicture = response.data.profilePicture
+              ? this.apiService.getImageUrl(response.data.profilePicture)
+              : '';
+          }
+        },
+        error: (error) => {
+          console.error('Error loading user profile picture:', error);
+        },
+      });
+    }
+  }
 
   // REMOVE THIS: Remove the old static method
   // getConnectionCount(): number {
@@ -1725,5 +1866,4 @@ export class DashboardComponent implements OnInit {
     const currentUserId = this.authService.getCurrentUserId();
     return reply.userId === currentUserId;
   }
-  
 }

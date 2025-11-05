@@ -63,6 +63,7 @@ export interface Post {
   createdDate: string;
   updatedDate?: string;
   likesCount: number;
+   isSavedByCurrentUser?: boolean;
   commentsCount: number;
   isLikedByCurrentUser: boolean;
   comments: Comment[];
@@ -79,6 +80,38 @@ export interface PostUpdate {
   description: string;
   photo?: File;
   existingPhotoPath?: string;
+}
+
+export interface SavedPost {
+  id: number;
+  userId: number;
+  postId: number;
+  savedAt: string;
+  post?: Post;
+}
+export interface SavePostResult {
+  id: number;
+  userId: number;
+  postId: number;
+  savedAt: string;
+}
+
+export interface SavePostRequest {
+  userId: number;
+  postId: number;
+}
+
+export interface SavedPostResponse {
+  success: boolean;
+  message: string;
+  data?: SavedPost;
+}
+
+export interface UserSavedPostsResponse {
+  success: boolean;
+  message: string;
+  data?: SavedPost[];
+   errors: string[];
 }
 
 export interface Comment {

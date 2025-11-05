@@ -53,6 +53,11 @@ export const routes: Routes = [
     loadComponent: () => import('./components/profile/profile.component').then(c => c.ProfileComponent),
     canActivate: [authGuard]
   },
+   {
+    path: 'saved-posts',
+    loadComponent: () => import('./components/saved-posts/saved-posts.component').then(c => c.SavedPostsComponent),
+    canActivate: [authGuard]
+  },
   {
     path: '**',
     redirectTo: '/login'
