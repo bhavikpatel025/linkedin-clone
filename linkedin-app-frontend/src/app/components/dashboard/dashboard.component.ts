@@ -98,10 +98,14 @@ declare var $: any;
               <!-- Saved Items -->
               <div class="saved-card card border-0 shadow-sm">
                 <div class="card-body p-0">
-                 <div class="saved-item p-3 border-bottom" routerLink="/saved-posts" style="cursor: pointer;">
-  <i class="bi bi-bookmark me-2 text-muted"></i>
-  <span class="small">Saved Items</span>
-</div>
+                  <div
+                    class="saved-item p-3 border-bottom"
+                    routerLink="/saved-posts"
+                    style="cursor: pointer;"
+                  >
+                    <i class="bi bi-bookmark me-2 text-muted"></i>
+                    <span class="small">Saved Items</span>
+                  </div>
                   <div class="saved-item p-3 border-bottom">
                     <i class="bi bi-people me-2 text-muted"></i>
                     <span class="small">Groups</span>
@@ -233,60 +237,68 @@ declare var $: any;
                           </div>
                         </div>
                         <!-- Post Header Dropdown -->
-<div class="dropdown">
-  <button
-    class="btn btn-link text-muted p-0"
-    type="button"
-    data-bs-toggle="dropdown"
-  >
-    <i class="bi bi-three-dots"></i>
-  </button>
-  <ul class="dropdown-menu dropdown-menu-end">
-    <!-- For current user's posts - Show Edit/Delete -->
-    <li *ngIf="post.userId === currentUser?.id">
-      <a
-        class="dropdown-item small"
-        [routerLink]="['/edit-post', post.id]"
-      >
-        <i class="bi bi-pencil me-2"></i>
-        Edit
-      </a>
-    </li>
-    <li *ngIf="post.userId === currentUser?.id">
-      <a
-        class="dropdown-item small text-danger"
-        href="#"
-        (click)="deletePost($event, post.id)"
-      >
-        <i class="bi bi-trash me-2"></i>
-        Delete
-      </a>
-    </li>
-    
-    <!-- For other users' posts - Show Save/Unsave -->
-    <li *ngIf="post.userId !== currentUser?.id">
-      <a
-        class="dropdown-item small"
-        href="#"
-        (click)="toggleSavePost($event, post)"
-      >
-        <i 
-          [class]="post.isSavedByCurrentUser ? 'bi bi-bookmark-fill text-primary me-2' : 'bi bi-bookmark me-2'"
-        ></i>
-        {{ post.isSavedByCurrentUser ? 'Unsave Post' : 'Save Post' }}
-      </a>
-    </li>
-    
-    <!-- Common options for all posts -->
-    <!-- <li><hr class="dropdown-divider"></li>
+                        <div class="dropdown">
+                          <button
+                            class="btn btn-link text-muted p-0"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                          >
+                            <i class="bi bi-three-dots"></i>
+                          </button>
+                          <ul class="dropdown-menu dropdown-menu-end">
+                            <!-- For current user's posts - Show Edit/Delete -->
+                            <li *ngIf="post.userId === currentUser?.id">
+                              <a
+                                class="dropdown-item small"
+                                [routerLink]="['/edit-post', post.id]"
+                              >
+                                <i class="bi bi-pencil me-2"></i>
+                                Edit
+                              </a>
+                            </li>
+                            <li *ngIf="post.userId === currentUser?.id">
+                              <a
+                                class="dropdown-item small text-danger"
+                                href="#"
+                                (click)="deletePost($event, post.id)"
+                              >
+                                <i class="bi bi-trash me-2"></i>
+                                Delete
+                              </a>
+                            </li>
+
+                            <!-- For other users' posts - Show Save/Unsave -->
+                            <li *ngIf="post.userId !== currentUser?.id">
+                              <a
+                                class="dropdown-item small"
+                                href="#"
+                                (click)="toggleSavePost($event, post)"
+                              >
+                                <i
+                                  [class]="
+                                    post.isSavedByCurrentUser
+                                      ? 'bi bi-bookmark-fill text-primary me-2'
+                                      : 'bi bi-bookmark me-2'
+                                  "
+                                ></i>
+                                {{
+                                  post.isSavedByCurrentUser
+                                    ? 'Unsave Post'
+                                    : 'Save Post'
+                                }}
+                              </a>
+                            </li>
+
+                            <!-- Common options for all posts -->
+                            <!-- <li><hr class="dropdown-divider"></li>
     <li>
       <a class="dropdown-item small" href="#">
         <i class="bi bi-flag me-2"></i>
         Report post
       </a>
     </li> -->
-  </ul>
-</div>
+                          </ul>
+                        </div>
                       </div>
 
                       <!-- Post Content -->
@@ -1145,7 +1157,7 @@ export class DashboardComponent implements OnInit {
 
   // Track which posts are truncated
   truncatedPosts: Set<number> = new Set();
-   savedPosts: Set<number> = new Set();
+  savedPosts: Set<number> = new Set();
 
   // Connection count property
   connectionCount: number = 0;
@@ -1178,7 +1190,7 @@ export class DashboardComponent implements OnInit {
     this.loadPosts();
     this.loadConnectionCount();
     this.loadCurrentUserProfilePicture();
-     this.loadUserSavedPosts();
+    this.loadUserSavedPosts();
   }
 
   // Method to load connection count
@@ -1204,23 +1216,23 @@ export class DashboardComponent implements OnInit {
       next: (response) => {
         if (response.success && response.data) {
           // Store saved post IDs for quick lookup
-          response.data.forEach(savedPost => {
+          response.data.forEach((savedPost) => {
             this.savedPosts.add(savedPost.postId);
           });
-          
+
           // Update posts with saved status
-          this.posts.forEach(post => {
+          this.posts.forEach((post) => {
             post.isSavedByCurrentUser = this.savedPosts.has(post.id);
           });
         }
       },
       error: (error) => {
         console.error('Error loading saved posts:', error);
-      }
+      },
     });
   }
 
-    toggleSavePost(event: Event, post: Post): void {
+  toggleSavePost(event: Event, post: Post): void {
     event.preventDefault();
     event.stopPropagation();
 
@@ -1233,7 +1245,7 @@ export class DashboardComponent implements OnInit {
           if (response.success) {
             post.isSavedByCurrentUser = false;
             this.savedPosts.delete(post.id);
-            
+
             Swal.fire({
               icon: 'success',
               title: 'Post Unsaved',
@@ -1250,13 +1262,13 @@ export class DashboardComponent implements OnInit {
             title: 'Error',
             text: 'Failed to unsave post',
           });
-        }
+        },
       });
     } else {
       // Save post
       const saveData: SavePostRequest = {
         userId: userId,
-        postId: post.id
+        postId: post.id,
       };
 
       this.apiService.savePost(saveData).subscribe({
@@ -1264,7 +1276,7 @@ export class DashboardComponent implements OnInit {
           if (response.success) {
             post.isSavedByCurrentUser = true;
             this.savedPosts.add(post.id);
-            
+
             Swal.fire({
               icon: 'success',
               title: 'Post Saved',
@@ -1281,7 +1293,7 @@ export class DashboardComponent implements OnInit {
             title: 'Error',
             text: 'Failed to save post',
           });
-        }
+        },
       });
     }
   }

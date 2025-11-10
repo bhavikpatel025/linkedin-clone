@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { CurrentUser } from '../models/models';
-import { ApiService } from './api.service'; // ADD THIS IMPORT
+import { ApiService } from './api.service'; 
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +10,7 @@ export class AuthService {
   private currentUserSubject: BehaviorSubject<CurrentUser | null>;
   public currentUser: Observable<CurrentUser | null>;
 
-  constructor(private apiService: ApiService) { // ADD ApiService TO CONSTRUCTOR
+  constructor(private apiService: ApiService) { 
     const storedUser = localStorage.getItem('currentUser');
     this.currentUserSubject = new BehaviorSubject<CurrentUser | null>(
       storedUser ? JSON.parse(storedUser) : null
@@ -22,7 +22,7 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  //  ADD THESE NEW METHODS
+
   forgotPassword(email: string): Observable<any> {
     return this.apiService.forgotPassword(email);
   }

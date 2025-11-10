@@ -16,6 +16,8 @@ import { ConnectionService } from '../../services/connection.service';
 import { NotificationService } from '../../services/notification.service';
 import { SearchService } from '../../services/search.service';
 import { ApiService } from '../../services/api.service'; 
+import { SignalrChatService } from '../../services/signalr-chat.service';
+
 import {
   Subscription,
   debounceTime,
@@ -362,7 +364,78 @@ import Swal from 'sweetalert2';
               </a>
             </li>
 
-            <!-- Notifications -->
+        
+
+            <!-- Jobs -->
+            <li class="nav-item mx-1">
+              <a
+                class="nav-link text-center px-2 nav-icon"
+                routerLink="/jobs"
+                routerLinkActive="active"
+              >
+                <i
+                  class="bi bi-briefcase-fill d-block"
+                  [ngClass]="{
+                    'text-dark': isActive('/jobs'),
+                    'text-muted': !isActive('/jobs')
+                  }"
+                  style="font-size: 1.2rem;"
+                ></i>
+                <small
+                  class="d-none d-lg-block"
+                  [ngClass]="{
+                    'text-dark fw-bold': isActive('/jobs'),
+                    'text-muted': !isActive('/jobs')
+                  }"
+                  style="font-size: 0.7rem;"
+                  >Jobs</small
+                >
+              </a>
+            </li>
+            <!-- Messages -->
+<li class="nav-item mx-1">
+  <a
+    class="nav-link text-center px-2 nav-icon position-relative"
+    routerLink="/chat"
+    routerLinkActive="active"
+  >
+    <div class="position-relative d-inline-block">
+      <i
+        class="bi bi-chat-fill d-block"
+        [ngClass]="{
+          'text-dark': isActive('/chat'),
+          'text-muted': !isActive('/chat')
+        }"
+        style="font-size: 1.2rem;"
+      ></i>
+      <!-- Chat Badge -->
+      <span
+        *ngIf="unreadChatCount > 0 || loadingChatCount"
+        class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+        [class.bg-danger]="!loadingChatCount"
+        [class.bg-secondary]="loadingChatCount"
+        style="font-size: 0.5rem; padding: 0.2em 0.4em; transform: translate(-30%, -30%);"
+      >
+        @if (loadingChatCount) {
+          <i class="spinner-border spinner-border-sm" style="width: 0.5rem; height: 0.5rem;"></i>
+        } @else {
+          {{ unreadChatCount }}
+        }
+        <span class="visually-hidden">unread messages</span>
+      </span>
+    </div>
+    <small
+      class="d-none d-lg-block"
+      [ngClass]="{
+        'text-dark fw-bold': isActive('/chat'),
+        'text-muted': !isActive('/chat')
+      }"
+      style="font-size: 0.7rem;"
+      >Messaging</small
+    >
+  </a>
+</li>
+    <!-- Notifications -->
             <li class="nav-item mx-1">
               <a
                 class="nav-link text-center px-2 nav-icon position-relative"
@@ -402,33 +475,6 @@ import Swal from 'sweetalert2';
                   }"
                   style="font-size: 0.7rem;"
                   >Notifications</small
-                >
-              </a>
-            </li>
-
-            <!-- Jobs -->
-            <li class="nav-item mx-1">
-              <a
-                class="nav-link text-center px-2 nav-icon"
-                routerLink="/jobs"
-                routerLinkActive="active"
-              >
-                <i
-                  class="bi bi-briefcase-fill d-block"
-                  [ngClass]="{
-                    'text-dark': isActive('/jobs'),
-                    'text-muted': !isActive('/jobs')
-                  }"
-                  style="font-size: 1.2rem;"
-                ></i>
-                <small
-                  class="d-none d-lg-block"
-                  [ngClass]="{
-                    'text-dark fw-bold': isActive('/jobs'),
-                    'text-muted': !isActive('/jobs')
-                  }"
-                  style="font-size: 0.7rem;"
-                  >Jobs</small
                 >
               </a>
             </li>
@@ -1005,6 +1051,9 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
   private refreshInterval: any;
   private searchSubscription?: Subscription; 
 
+  unreadChatCount: number = 0;
+  loadingChatCount: boolean = false;
+
   @ViewChild('searchInput') searchInput!: ElementRef;
 
   constructor(
@@ -1015,7 +1064,8 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
     private notificationService: NotificationService,
     private searchService: SearchService,
     private cdr: ChangeDetectorRef,
-    private apiService: ApiService 
+    private apiService: ApiService ,
+     private signalrChatService: SignalrChatService
   ) {}
 
   ngOnInit() {
@@ -1029,6 +1079,7 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
         this.loadNotificationCount();
         this.subscribeToPendingCount();
         this.subscribeToNotificationCount();      
+          this.subscribeToChatCount();
         this.startAutoRefresh();
       }
     });
@@ -1099,6 +1150,24 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
     });
   }
 }
+
+loadChatCount(forceRefresh: boolean = false): void {
+  if (!this.currentUser) return;
+
+  this.loadingChatCount = true;
+  
+  // Listen to real-time chat count updates
+  this.signalrChatService.unreadCounts$.subscribe(counts => {
+    this.unreadChatCount = this.signalrChatService.getTotalUnreadCount();
+    this.loadingChatCount = false;
+    this.cdr.detectChanges();
+  });
+}
+
+subscribeToChatCount(): void {
+  // You can add any additional chat count subscriptions here
+}
+
 
   // Search History Methods
   private loadSearchHistory() {

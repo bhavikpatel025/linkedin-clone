@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
+import { ConnectionService } from '../../services/connection.service';
 import { Post, PostUpdate } from '../../models/models';
 import Swal from 'sweetalert2';
 
@@ -14,7 +15,7 @@ import Swal from 'sweetalert2';
   template: `
     <div class="edit-post-container">
       <!-- Header -->
-      <div class="edit-post-header">
+      <!-- <div class="edit-post-header">
         <div class="container">
           <div class="d-flex align-items-center justify-content-between py-3">
             <div class="d-flex align-items-center">
@@ -31,53 +32,102 @@ import Swal from 'sweetalert2';
             </button>
           </div>
         </div>
-      </div>
+      </div> -->
 
+      <!-- Main Content -->
       <div class="container">
         <div class="row justify-content-center">
-          <div class="col-lg-8 col-md-10">
-            <!-- User Info Card -->
-            <div class="user-card mb-3">
-              <div class="d-flex align-items-center">
-               <div class="user-avatar me-3">
-  @if (currentUserProfilePicture) {
-    <img [src]="currentUserProfilePicture" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle"></i>
-  }
-</div>
-                <div>
-                  <h6 class="mb-0 fw-bold">{{ currentUser?.name }}</h6>
-                  <small class="text-muted">Editing post • Anyone can see this</small>
+          <!-- Left Sidebar -->
+          <div class="col-lg-3 d-none d-lg-block">
+            <div class="left-sidebar sticky-sidebar">
+              <!-- Profile Card -->
+              <div class="profile-card card border-0 shadow-sm mb-3">
+                <div class="card-background"></div>
+                <div class="card-body text-center p-0">
+                  <div class="profile-content pt-4 px-3 pb-3">
+                    <div class="profile-avatar mb-2">
+                      <div class="avatar-container">
+                        @if (currentUserProfilePicture) {
+                          <img
+                            [src]="currentUserProfilePicture"
+                            alt="Profile"
+                            class="avatar-image"
+                          />
+                        } @else {
+                          <i class="bi bi-person-circle"></i>
+                        }
+                      </div>
+                    </div>
+                    <h6 class="mb-1 fw-bold text-dark">
+                      {{ currentUser?.name }}
+                    </h6>
+                    <p class="text-muted small mb-2">
+                      {{ currentUser?.roleName || 'Software Developer' }}
+                    </p>
+                    <p class="text-muted x-small mb-3">Ahmedabad, Gujarat</p>
+
+                    <!-- Profile Stats -->
+                    <div class="profile-stats border-top pt-3">
+                      <div class="d-flex justify-content-between">
+                        <div class="text-center flex-fill">
+                          <small class="text-muted d-block">Connections</small>
+                          <div class="fw-bold text-dark">
+                            {{ connectionCount }}
+                          </div>
+                        </div>
+                        <div class="text-center flex-fill">
+                          <small class="text-muted d-block">Total Posts</small>
+                          <div class="fw-bold text-dark">
+                            {{ totalPostsCount }}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>             
+            </div>
+          </div>
+
+          <!-- Main Content Area -->
+          <div class="col-lg-6 col-md-10">
+            <!-- Loading State -->
+            <div *ngIf="loading" class="text-center py-5">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
               </div>
+              <p class="mt-3 text-muted">Loading your post...</p>
             </div>
 
-            <!-- Preview Card -->
-            <!-- <div class="preview-card mb-3" *ngIf="!loading && editPostForm.get('description')?.value">
-              <div class="preview-header">
-                <h6 class="mb-2 fw-bold">Preview</h6>
-                <small class="text-muted">How your updated post will appear</small>
+            <!-- Edit Post Card -->
+            <div *ngIf="!loading" class="edit-post-main card border-0 shadow-sm">
+              <!-- User Header -->
+              <div class="post-header p-3 border-bottom">
+                <div class="d-flex align-items-center">
+                  <div class="user-avatar me-3">
+                    @if (currentUserProfilePicture) {
+                      <img [src]="currentUserProfilePicture" alt="Profile" class="avatar-image">
+                    } @else {
+                      <i class="bi bi-person-circle"></i>
+                    }
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="mb-0 fw-bold">{{ currentUser?.name }}</h6>
+                    <div class="privacy-selector mt-1">
+                      <select class="form-select form-select-sm border-0 bg-light" style="width: auto; font-size: 0.8rem;">
+                        <option selected>🌐 Anyone</option>
+                        <option>👥 Connections only</option>
+                        <option>🔒 Only me</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="preview-content">
-                <div class="preview-text" [innerHTML]="getFormattedPreview()"></div>
-                <button 
-                  class="btn-see-more" 
-                  *ngIf="shouldShowSeeMore()"
-                  (click)="togglePreview()">
-                  {{ showFullPreview ? 'See less' : '...see more' }}
-                </button>
-              </div>
-              <div class="preview-image" *ngIf="getPreviewImageUrl()">
-                <img [src]="getPreviewImageUrl()" alt="Preview" class="preview-img">
-              </div>
-            </div> -->
 
-            <!-- Main Edit Card -->
-            <div class="edit-card">
+              <!-- Post Form -->
               <form [formGroup]="editPostForm" (ngSubmit)="onSubmit()">
                 <!-- Content Area -->
-                <div class="content-area">
+                <div class="content-area p-3">
                   <textarea
                     class="post-textarea"
                     formControlName="description"
@@ -85,18 +135,12 @@ import Swal from 'sweetalert2';
                     placeholder="What do you want to talk about?"
                     (input)="onContentChange()"
                     (keydown)="onKeydown($event)"
-                    (keyup)="checkLineBreaks()"></textarea>
+                    rows="4"></textarea>
                   
-                  <!-- Formatting Tips -->
-                  <!-- <div class="formatting-tips">
-                    <small class="text-muted">
-                      <i class="bi bi-info-circle me-1"></i>
-                      Press Enter for new lines • Use empty lines for paragraphs
-                    </small>
-                  </div> -->
-
                   <!-- Character Counter -->
-                  <div class="character-counter" [class.near-limit]="characterCount > 1800">
+                  <div class="character-counter" 
+                       [class.near-limit]="characterCount > 1800" 
+                       [class.over-limit]="characterCount > 2000">
                     {{ characterCount }}/2000
                   </div>
 
@@ -110,74 +154,50 @@ import Swal from 'sweetalert2';
                   </div>
                 </div>
 
-                <!-- Image Management Section -->
-                <div class="image-management" *ngIf="existingImageUrl || previewUrl">
-                  <div class="image-management-header">
-                    <span class="text-muted">Post image</span>
-                  </div>
-                  
-                  <!-- Existing Image -->
-                  <div class="existing-image-section" *ngIf="existingImageUrl && !previewUrl">
-                    <div class="image-container">
-                      <img [src]="existingImageUrl" alt="Current" class="current-image">
-                      <div class="image-actions">
-                        <button type="button" class="btn-action btn-remove" (click)="removeExistingImage()">
-                          <i class="bi bi-trash"></i>
-                          Remove
-                        </button>
-                        <button type="button" class="btn-action btn-replace" (click)="triggerFileInput()">
-                          <i class="bi bi-arrow-repeat"></i>
-                          Replace
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- New Image Preview -->
-                  <div class="new-image-section" *ngIf="previewUrl">
-                    <div class="image-container">
-                      <img [src]="previewUrl" alt="New" class="new-image">
-                      <div class="image-actions">
-                        <button type="button" class="btn-action btn-remove" (click)="removeNewImage($event)">
-                          <i class="bi bi-x"></i>
-                          Remove new image
-                        </button>
-                        <span class="badge-new">New</span>
-                      </div>
+                <!-- Image Preview -->
+                <div class="image-preview-section px-3 pb-3" *ngIf="previewUrl || existingImageUrl">
+                  <div class="image-preview-container">
+                    <div class="image-preview">
+                      <img 
+                        [src]="previewUrl || existingImageUrl" 
+                        alt="Preview" 
+                        class="preview-image"
+                        *ngIf="previewUrl || existingImageUrl">
+                      <button
+                        type="button"
+                        class="btn-remove-image"
+                        (click)="removeImage($event)">
+                        <i class="bi bi-x-lg"></i>
+                      </button>
+                      <span class="badge-new" *ngIf="previewUrl">New</span>
                     </div>
                   </div>
                 </div>
 
-                <!-- Add to your post -->
-                <div class="add-to-post">
-                  <div class="add-to-post-header">
-                    <span class="text-muted">Add to your post</span>
-                    <!-- <button 
-                      type="button" 
-                      class="btn-preview-toggle"
-                      (click)="togglePreviewSection()">
-                      {{ showPreview ? 'Hide Preview' : 'Show Preview' }}
-                    </button> -->
+                <!-- Add to Post Options -->
+                <div class="add-to-post p-3 border-top">
+                  <div class="add-to-post-header mb-2">
+                    <span class="text-muted small fw-medium">Add to your post</span>
                   </div>
                   <div class="add-to-post-actions">
-                    <button type="button" class="btn-action" (click)="triggerFileInput()">
-                      <i class="bi bi-image-fill text-success"></i>
-                      <span>Photo</span>
+                    <button type="button" class="btn-post-option" (click)="triggerFileInput()">
+                      <i class="bi bi-image text-success"></i>
+                      <span class="ms-1">Photo</span>
                     </button>
                     
-                    <button type="button" class="btn-action">
-                      <i class="bi bi-camera-video-fill text-info"></i>
-                      <span>Video</span>
+                    <button type="button" class="btn-post-option">
+                      <i class="bi bi-camera-video text-info"></i>
+                      <span class="ms-1">Video</span>
                     </button>
                     
-                    <button type="button" class="btn-action">
-                      <i class="bi bi-calendar-event-fill text-warning"></i>
-                      <span>Event</span>
+                    <button type="button" class="btn-post-option">
+                      <i class="bi bi-calendar-event text-warning"></i>
+                      <span class="ms-1">Event</span>
                     </button>
                     
-                    <button type="button" class="btn-action">
-                      <i class="bi bi-file-text-fill text-danger"></i>
-                      <span>Write article</span>
+                    <button type="button" class="btn-post-option">
+                      <i class="bi bi-file-text text-danger"></i>
+                      <span class="ms-1">Article</span>
                     </button>
                   </div>
                 </div>
@@ -190,50 +210,91 @@ import Swal from 'sweetalert2';
                   accept="image/*"
                   (change)="onFileSelected($event)">
 
-                <!-- Action Buttons -->
-                <div class="action-buttons">
-                  <button
-                    type="button"
-                    class="btn-cancel"
-                    routerLink="/dashboard"
-                    [disabled]="submitting">
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    class="btn-save"
-                    [disabled]="submitting || editPostForm.invalid"
-                    [class.btn-save-disabled]="submitting || editPostForm.invalid">
-                    <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
-                    {{ submitting ? 'Saving...' : 'Save' }}
-                  </button>
+                <!-- Post Button -->
+                <div class="post-actions p-3 border-top bg-light">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">                    
+                    </div>
+                    <button
+                      type="submit"
+                      class="btn-post"
+                      [disabled]="submitting || editPostForm.invalid || characterCount > 2000"
+                      [class.btn-post-disabled]="submitting || editPostForm.invalid || characterCount > 2000">
+                      <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+                      {{ submitting ? 'Updating...' : 'Update' }}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
 
-            <!-- Loading State -->
-            <div class="loading-state" *ngIf="loading">
-              <div class="loading-content">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-3 text-muted">Loading your post...</p>
+            <!-- Editing Tips -->
+            <div class="tips-card card border-0 shadow-sm mt-3 d-lg-none">
+              <div class="card-body">
+                <h6 class="fw-bold mb-2">💡 Editing Tips</h6>
+                <ul class="small text-muted mb-0 ps-3">
+                  <li>Keep your updates professional</li>
+                  <li>Check for typos and grammar</li>
+                  <li>Make sure your message is clear</li>
+                </ul>
               </div>
             </div>
+          </div>
 
-            <!-- Tips Card -->
-            <!-- <div class="tips-card" *ngIf="!loading">
-              <div class="tips-header">
-                <i class="bi bi-lightbulb me-2"></i>
-                <span class="fw-bold">Editing tips</span>
+          <!-- Right Sidebar -->
+          <div class="col-lg-3 d-none d-lg-block">
+            <div class="right-sidebar sticky-sidebar">
+              <!-- Editing Tips -->
+              <div class="tips-card card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">💡 Editing Tips</h6>
+                  <div class="tip-item mb-3">
+                    <div class="d-flex align-items-start">
+                      <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                      <div>
+                        <small class="fw-medium d-block">Be professional</small>
+                        <small class="text-muted">Keep updates respectful and appropriate</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tip-item mb-3">
+                    <div class="d-flex align-items-start">
+                      <i class="bi bi-spellcheck text-primary me-2 mt-1"></i>
+                      <div>
+                        <small class="fw-medium d-block">Check spelling</small>
+                        <small class="text-muted">Review for typos and grammar</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tip-item">
+                    <div class="d-flex align-items-start">
+                      <i class="bi bi-chat-quote text-info me-2 mt-1"></i>
+                      <div>
+                        <small class="fw-medium d-block">Be clear</small>
+                        <small class="text-muted">Ensure your message is understandable</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <ul class="tips-list">
-                <li>Keep your updates professional and respectful</li>
-                <li>Consider adding relevant hashtags</li>
-                <li>Check for typos and grammar</li>
-                <li>Make sure your message is clear and concise</li>
-              </ul>
-            </div> -->
+
+              <!-- Edit History -->
+              <div class="activity-card card border-0 shadow-sm">
+                <div class="card-body">
+                  <h6 class="fw-bold mb-3">📝 Edit Info</h6>
+                  <div class="activity-stats">
+                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                      <small class="text-muted">Original post</small>
+                      <small class="fw-bold text-dark">{{ formatDate(originalPostDate) }}</small>
+                    </div>
+                    <div class="stat-item d-flex justify-content-between align-items-center mb-2">
+                      <small class="text-muted">Last edited</small>
+                      <small class="fw-bold text-dark">{{ formatDate(lastEditedDate) }}</small>
+                    </div>                    
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -242,8 +303,8 @@ import Swal from 'sweetalert2';
   styles: [`
     .edit-post-container {
       min-height: 100vh;
-      background-color: #f4f2ee;
-       padding: 10px 0 10px 0;      
+      background-color: #f3f2ef;
+      padding: 20px 0;
     }
 
     .edit-post-header {
@@ -252,9 +313,10 @@ import Swal from 'sweetalert2';
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
 
-    .btn-back, .btn-close {
+    .btn-back {
       width: 40px;
       height: 40px;
       border-radius: 50%;
@@ -264,36 +326,134 @@ import Swal from 'sweetalert2';
       border: 1px solid #e0e0e0;
       background: white;
       transition: all 0.2s ease;
+      color: #666;
     }
 
     .btn-back:hover {
       background-color: #f3f2ef;
       border-color: #0a66c2;
+      color: #0a66c2;
+    }
+
+    .btn-close {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e0e0e0;
+      background: white;
+      transition: all 0.2s ease;
+      color: #666;
     }
 
     .btn-close:hover {
       background-color: #f3f2ef;
       border-color: #d11124;
+      color: #d11124;
     }
 
-    .user-card, .preview-card, .edit-card, .tips-card {
-      background: white;
+    /* Sticky Sidebar */
+    .sticky-sidebar {
+      position: sticky;
+      top: 80px;
+      height: calc(100vh - 100px);
+      overflow-y: auto;
+    }
+
+    .sticky-sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sticky-sidebar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .sticky-sidebar::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 10px;
+    }
+
+    .sticky-sidebar::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+
+    /* Cards */
+    .card {
       border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      margin-bottom: 16px;
+      border: 1px solid #e0e0e0;
     }
 
-    .user-card {
-      padding: 16px 20px;
-    }
-
-    .preview-card {
-      padding: 20px;
-    }
-
-    .edit-card {
-      padding: 0;
+    /* Profile Card */
+    .profile-card {
+      position: relative;
       overflow: hidden;
+    }
+
+    .card-background {
+      height: 56px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .profile-content {
+      margin-top: -40px;
+    }
+
+    .avatar-container {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: white;
+      border: 4px solid white;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .avatar-container i {
+      font-size: 2.5rem;
+      color: #666;
+    }
+
+    .avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-stats {
+      font-size: 0.8rem;
+    }
+
+    .x-small {
+      font-size: 0.75rem;
+    }
+
+    /* Saved Items */
+    .saved-item {
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      border-radius: 4px;
+      margin: 2px;
+    }
+
+    .saved-item:hover {
+      background-color: #f8f9fa;
+    }
+
+    /* Main Edit Card */
+    .edit-post-main {
+      background: white;
+    }
+
+    .post-header {
+      background: white;
     }
 
     .user-avatar {
@@ -304,68 +464,27 @@ import Swal from 'sweetalert2';
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      font-size: 2rem;
       color: #0a66c2;
       overflow: hidden;
-
-    }
-    .avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-
-    .preview-header {
-      border-bottom: 1px solid #f0f0f0;
-      padding-bottom: 12px;
-      margin-bottom: 12px;
+      flex-shrink: 0;
     }
 
-    .preview-content {
-      line-height: 1.6;
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 16px;
+    .privacy-selector .form-select {
+      background-color: #f8f9fa;
+      border-radius: 16px;
+      padding: 2px 12px;
+      font-size: 0.8rem;
     }
 
-    .preview-text {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      max-height: {{ showFullPreview ? 'none' : '120px' }};
-      overflow: hidden;
+    .privacy-selector .form-select:focus {
+      box-shadow: none;
+      border-color: #0a66c2;
     }
 
-    .btn-see-more {
-      background: none;
-      border: none;
-      color: #0a66c2;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      padding: 4px 0;
-      margin-top: 4px;
-    }
-
-    .btn-see-more:hover {
-      text-decoration: underline;
-      background-color: #f0f7ff;
-    }
-
-    .preview-image {
-      margin-top: 12px;
-    }
-
-    .preview-img {
-      max-width: 100%;
-      max-height: 200px;
-      border-radius: 8px;
-      object-fit: contain;
-    }
-
+    /* Content Area */
     .content-area {
-      position: relative;
-      padding: 20px;
+      background: white;
     }
 
     .post-textarea {
@@ -373,11 +492,10 @@ import Swal from 'sweetalert2';
       border: none;
       resize: none;
       font-size: 16px;
-      line-height: 1.6;
-      min-height: 120px;
+      line-height: 1.5;
       outline: none;
       font-family: inherit;
-      white-space: pre-wrap;
+      background: white;
     }
 
     .post-textarea::placeholder {
@@ -390,92 +508,69 @@ import Swal from 'sweetalert2';
       box-shadow: none;
     }
 
-    .formatting-tips {
-      margin-top: 8px;
-      padding: 8px 12px;
-      background: #f8f9fa;
-      border-radius: 4px;
-      border-left: 3px solid #0a66c2;
-    }
-
     .character-counter {
       text-align: right;
       font-size: 12px;
       color: #666;
       margin-top: 8px;
+      font-weight: 500;
     }
 
     .character-counter.near-limit {
+      color: #ff9800;
+    }
+
+    .character-counter.over-limit {
       color: #d11124;
       font-weight: 600;
     }
 
-    .image-management {
-      padding: 16px 20px;
-      border-top: 1px solid #e0e0e0;
+    /* Image Preview */
+    .image-preview-container {
+      position: relative;
     }
 
-    .image-management-header {
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: #666;
-    }
-
-    .image-container {
+    .image-preview {
       position: relative;
       display: inline-block;
-    }
-
-    .current-image, .new-image {
-      max-width: 100%;
-      max-height: 300px;
       border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e0e0e0;
+    }
+
+    .preview-image {
+      max-width: 100%;
+      max-height: 400px;
       object-fit: contain;
+      display: block;
     }
 
-    .image-actions {
+    .btn-remove-image {
       position: absolute;
-      bottom: 12px;
-      right: 12px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-action {
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      color: white;
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      border: 1px solid #e0e0e0;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.9);
+      justify-content: center;
       font-size: 12px;
-      font-weight: 500;
       transition: all 0.2s ease;
-      cursor: pointer;
     }
 
-    .btn-remove {
-      color: #d11124;
-      border-color: #d11124;
-    }
-
-    .btn-remove:hover {
-      background: #d11124;
-      color: white;
-    }
-
-    .btn-replace {
-      color: #0a66c2;
-      border-color: #0a66c2;
-    }
-
-    .btn-replace:hover {
-      background: #0a66c2;
-      color: white;
+    .btn-remove-image:hover {
+      background: rgba(0, 0, 0, 0.9);
+      transform: scale(1.1);
     }
 
     .badge-new {
+      position: absolute;
+      top: 8px;
+      left: 8px;
       background: #0a66c2;
       color: white;
       padding: 4px 8px;
@@ -484,82 +579,45 @@ import Swal from 'sweetalert2';
       font-weight: 600;
     }
 
+    /* Add to Post Options */
     .add-to-post {
-      padding: 16px 20px;
-      border-top: 1px solid #e0e0e0;
+      background: white;
     }
 
-    .add-to-post-header {
+    .btn-post-option {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      padding: 8px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      background: white;
       font-size: 14px;
-    }
-
-    .btn-preview-toggle {
-      background: none;
-      border: 1px solid #0a66c2;
-      color: #0a66c2;
-      padding: 4px 12px;
-      border-radius: 16px;
-      font-size: 12px;
       font-weight: 500;
-      cursor: pointer;
       transition: all 0.2s ease;
+      cursor: pointer;
+      color: #666;
     }
 
-    .btn-preview-toggle:hover {
-      background: #0a66c2;
-      color: white;
+    .btn-post-option:hover {
+      background-color: #f3f2ef;
+      border-color: #0a66c2;
+      color: #000;
+      transform: translateY(-1px);
     }
 
     .add-to-post-actions {
       display: flex;
-      gap: 12px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
-    .add-to-post-actions .btn-action {
-      border: 1px solid #e0e0e0;
-      background: white;
-      color: #666;
-      font-size: 14px;
-      padding: 8px 16px;
-    }
-
-    .add-to-post-actions .btn-action:hover {
-      background-color: #f3f2ef;
-      border-color: #0a66c2;
-      color: #000;
-    }
-
-    .action-buttons {
-      padding: 16px 20px;
-      border-top: 1px solid #e0e0e0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-    }
-
-    .btn-cancel {
-      background: white;
-      color: #666;
-      border: 1px solid #e0e0e0;
-      border-radius: 24px;
-      padding: 8px 24px;
-      font-weight: 600;
-      font-size: 14px;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-
-    .btn-cancel:hover:not(:disabled) {
+    /* Post Actions */
+    .post-actions {
       background: #f8f9fa;
-      border-color: #666;
+      border-radius: 0 0 8px 8px;
     }
 
-    .btn-save {
+    .btn-post {
       background: #0a66c2;
       color: white;
       border: none;
@@ -569,84 +627,58 @@ import Swal from 'sweetalert2';
       font-size: 14px;
       transition: all 0.2s ease;
       cursor: pointer;
+      min-width: 80px;
     }
 
-    .btn-save:hover:not(:disabled) {
+    .btn-post:hover:not(:disabled) {
       background: #004182;
       transform: translateY(-1px);
       box-shadow: 0 2px 8px rgba(10, 102, 194, 0.3);
     }
 
-    .btn-save-disabled {
+    .btn-post-disabled {
       background: #ccc !important;
       cursor: not-allowed !important;
       transform: none !important;
       box-shadow: none !important;
     }
 
-    .loading-state {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      padding: 60px 20px;
-      text-align: center;
-    }
-
-    .loading-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
+    /* Tips Card */
     .tips-card {
-      padding: 20px;
+      background: white;
     }
 
-    .tips-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 12px;
-      color: #0a66c2;
-      font-size: 14px;
+    .tip-item {
+      padding: 8px 0;
     }
 
-    .tips-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
+    .tip-item:not(:last-child) {
+      border-bottom: 1px solid #f0f0f0;
     }
 
-    .tips-list li {
+    /* Activity Stats */
+    .activity-stats {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .stat-item {
       padding: 4px 0;
-      font-size: 13px;
-      color: #666;
-      position: relative;
-      padding-left: 16px;
-      line-height: 1.4;
-    }
-
-    .tips-list li:before {
-      content: '•';
-      color: #0a66c2;
-      position: absolute;
-      left: 0;
-    }
-
-    .invalid-feedback {
-      display: block;
-      font-size: 12px;
-      color: #d11124;
-      margin-top: 4px;
-    }
-
-    .is-invalid {
-      border: 1px solid #d11124 !important;
     }
 
     /* Responsive Design */
     @media (max-width: 768px) {
+      .edit-post-container {
+        padding: 60px 0 20px 0;
+      }
+
       .edit-post-header {
-        position: relative;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
       }
 
       .container {
@@ -658,45 +690,32 @@ import Swal from 'sweetalert2';
       }
 
       .post-textarea {
-        min-height: 100px;
+        min-height: 120px;
         font-size: 14px;
       }
 
       .add-to-post-actions {
-        gap: 8px;
+        gap: 6px;
       }
 
-      .add-to-post-actions .btn-action {
+      .btn-post-option {
         padding: 6px 12px;
         font-size: 12px;
       }
 
-      .current-image, .new-image {
-        max-height: 200px;
-      }
-
-      .user-card, .preview-card {
-        padding: 12px 16px;
+      .preview-image {
+        max-height: 250px;
       }
 
       .user-avatar {
         width: 40px;
         height: 40px;
-        font-size: 20px;
+        font-size: 1.5rem;
       }
 
-      .add-to-post-header {
-        flex-direction: column;
-        gap: 8px;
-        align-items: flex-start;
-      }
-
-      .action-buttons {
-        flex-direction: column;
-      }
-
-      .btn-cancel, .btn-save {
-        width: 100%;
+      .avatar-container {
+        width: 60px;
+        height: 60px;
       }
     }
 
@@ -705,19 +724,57 @@ import Swal from 'sweetalert2';
         justify-content: space-between;
       }
 
-      .add-to-post-actions .btn-action {
+      .btn-post-option {
         flex: 1;
         justify-content: center;
-        min-width: 80px;
+        min-width: 70px;
       }
 
-      .image-actions {
-        position: relative;
-        bottom: auto;
-        right: auto;
-        margin-top: 8px;
-        justify-content: center;
+      .post-actions {
+        text-align: center;
       }
+
+      .btn-post {
+        width: 100%;
+        max-width: 200px;
+      }
+
+      .avatar-container {
+        width: 50px;
+        height: 50px;
+      }
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .edit-post-main {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    /* Loading States */
+    .spinner-border-sm {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* Invalid State */
+    .is-invalid {
+      border-color: #dc3545 !important;
+    }
+
+    .invalid-feedback {
+      display: block;
+      font-size: 0.8rem;
     }
   `]
 })
@@ -731,15 +788,23 @@ export class EditPostComponent implements OnInit {
   existingImageUrl: string | null = null;
   existingPhotoPath: string | null = null;
   characterCount = 0;
-  showPreview = true;
-  showFullPreview = false;
   currentUser = this.authService.currentUserValue;
   currentUserProfilePicture: string = '';
+
+  // User data properties
+  connectionCount = 0;
+  totalPostsCount = 0;
+  
+  // Edit history
+  originalPostDate = new Date().toISOString();
+  lastEditedDate = new Date().toISOString();
+  editCount = 1;
 
   constructor(
     private formBuilder: FormBuilder,
     private apiService: ApiService,
     private authService: AuthService,
+    private connectionService: ConnectionService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -753,7 +818,10 @@ export class EditPostComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-     this.loadCurrentUserProfilePicture();
+    
+    this.loadCurrentUserWithProfilePicture();
+    this.loadConnectionCount();
+    this.loadTotalPostsCount();
 
     this.route.params.subscribe(params => {
       this.postId = +params['id'];
@@ -778,7 +846,8 @@ export class EditPostComponent implements OnInit {
               icon: 'error',
               title: 'Unauthorized',
               text: 'You can only edit your own posts',
-              confirmButtonColor: '#0a66c2'
+              confirmButtonColor: '#0a66c2',
+              background: '#fff'
             }).then(() => {
               this.router.navigate(['/dashboard']);
             });
@@ -798,6 +867,10 @@ export class EditPostComponent implements OnInit {
             this.existingPhotoPath = post.photoPath;
             this.existingImageUrl = this.apiService.getImageUrl(post.photoPath);
           }
+
+          // Set edit history (you might get this from your API)
+          this.originalPostDate = post.createdDate;
+          this.lastEditedDate = post.updatedDate || post.createdDate;
         }
         this.loading = false;
       },
@@ -807,7 +880,8 @@ export class EditPostComponent implements OnInit {
           icon: 'error',
           title: 'Error',
           text: 'Failed to load post',
-          confirmButtonColor: '#0a66c2'
+          confirmButtonColor: '#0a66c2',
+          background: '#fff'
         }).then(() => {
           this.router.navigate(['/dashboard']);
         });
@@ -816,6 +890,58 @@ export class EditPostComponent implements OnInit {
     });
   }
 
+  // Load user profile picture and data
+  loadCurrentUserWithProfilePicture(): void {
+    if (this.currentUser) {
+      this.apiService.getUserById(this.currentUser.id).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            const userWithProfilePicture = response.data;
+            this.currentUserProfilePicture = userWithProfilePicture.profilePicture 
+              ? this.apiService.getImageUrl(userWithProfilePicture.profilePicture)
+              : '';
+          }
+        },
+        error: (error) => {
+          console.error('Error loading user profile picture:', error);
+        }
+      });
+    }
+  }
+
+  // Load connection count
+  loadConnectionCount(): void {
+    const userId = this.authService.getCurrentUserId();
+    this.connectionService.getConnectionCount(userId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.connectionCount = response.data ?? 0;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading connection count:', error);
+        this.connectionCount = 145; // Fallback
+      }
+    });
+  }
+
+  // Load total posts count
+  loadTotalPostsCount(): void {
+    const userId = this.authService.getCurrentUserId();
+    this.apiService.getUserPosts(userId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.totalPostsCount = response.data.length || 0;
+        }
+      },
+      error: (error) => {
+        console.error('Error loading posts count:', error);
+        this.totalPostsCount = 24; // Fallback
+      }
+    });
+  }
+
+  // Form validation
   isFieldInvalid(fieldName: string): boolean {
     const field = this.editPostForm.get(fieldName);
     return !!(field && field.invalid && (field.dirty || field.touched));
@@ -826,60 +952,10 @@ export class EditPostComponent implements OnInit {
     this.characterCount = content.length;
   }
 
-  checkLineBreaks(): void {
-    // This ensures line breaks are preserved in the textarea
-    const textarea = document.querySelector('.post-textarea') as HTMLTextAreaElement;
-    if (textarea) {
-      textarea.style.whiteSpace = 'pre-wrap';
-      textarea.style.wordWrap = 'break-word';
-    }
-  }
-
   onKeydown(event: KeyboardEvent): void {
-    // Allow Ctrl+Enter to submit
     if (event.ctrlKey && event.key === 'Enter') {
       this.onSubmit();
     }
-  }
-
-  getFormattedPreview(): string {
-    const content = this.editPostForm.get('description')?.value || '';
-    
-    if (!this.showFullPreview && content.length > 200) {
-      const truncated = content.substring(0, 200);
-      return this.formatText(truncated);
-    }
-    
-    return this.formatText(content);
-  }
-
-  formatText(text: string): string {
-    // Convert line breaks to HTML and add basic formatting
-    return text
-      .replace(/\n/g, '<br>')
-      .replace(/(\*\*|__)(.*?)\1/g, '<strong>$2</strong>')
-      .replace(/(\*|_)(.*?)\1/g, '<em>$2</em>')
-      .replace(/#(\w+)/g, '<strong class="hashtag">#$1</strong>');
-  }
-
-  shouldShowSeeMore(): boolean {
-    const content = this.editPostForm.get('description')?.value || '';
-    return content.length > 200;
-  }
-
-  togglePreview(): void {
-    this.showFullPreview = !this.showFullPreview;
-  }
-
-  togglePreviewSection(): void {
-    this.showPreview = !this.showPreview;
-    if (this.showPreview) {
-      this.showFullPreview = false;
-    }
-  }
-
-  getPreviewImageUrl(): string | null {
-    return this.previewUrl || this.existingImageUrl;
   }
 
   triggerFileInput(): void {
@@ -890,31 +966,30 @@ export class EditPostComponent implements OnInit {
   onFileSelected(event: any): void {
     const file = event.target.files[0];
     if (file) {
-      // Validate file size (5MB max)
       if (file.size > 5 * 1024 * 1024) {
         Swal.fire({
           icon: 'error',
           title: 'File Too Large',
           text: 'Image size should not exceed 5MB',
-          confirmButtonColor: '#0a66c2'
+          confirmButtonColor: '#0a66c2',
+          background: '#fff'
         });
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         Swal.fire({
           icon: 'error',
           title: 'Invalid File Type',
           text: 'Please select an image file (JPG, PNG, GIF)',
-          confirmButtonColor: '#0a66c2'
+          confirmButtonColor: '#0a66c2',
+          background: '#fff'
         });
         return;
       }
 
       this.selectedFile = file;
 
-      // Create preview
       const reader = new FileReader();
       reader.onload = (e: any) => {
         this.previewUrl = e.target.result;
@@ -923,54 +998,46 @@ export class EditPostComponent implements OnInit {
 
       // Hide existing image when new one is selected
       this.existingImageUrl = null;
+      this.existingPhotoPath = null;
     }
   }
 
-  removeExistingImage(): void {
-    this.existingImageUrl = null;
-    this.existingPhotoPath = null;
-  }
-
-  removeNewImage(event: Event): void {
+  removeImage(event: Event): void {
     event.stopPropagation();
-    this.selectedFile = null;
-    this.previewUrl = null;
-
-    // Show existing image again if it exists
-    if (this.existingPhotoPath) {
-      this.existingImageUrl = this.apiService.getImageUrl(this.existingPhotoPath);
+    if (this.previewUrl) {
+      // Remove new image
+      this.selectedFile = null;
+      this.previewUrl = null;
+      
+      // Show existing image again if it exists
+      if (this.existingPhotoPath) {
+        this.existingImageUrl = this.apiService.getImageUrl(this.existingPhotoPath);
+      }
+    } else if (this.existingImageUrl) {
+      // Remove existing image
+      this.existingImageUrl = null;
+      this.existingPhotoPath = null;
     }
   }
 
-  // showVideoAlert(): void {
-  //   Swal.fire({
-  //     icon: 'info',
-  //     title: 'Video Upload',
-  //     text: 'Video upload feature is coming soon!',
-  //     confirmButtonColor: '#0a66c2'
-  //   });
-  // }
+  formatDate(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-  // showEventAlert(): void {
-  //   Swal.fire({
-  //     icon: 'info',
-  //     title: 'Create Event',
-  //     text: 'Event creation feature is coming soon!',
-  //     confirmButtonColor: '#0a66c2'
-  //   });
-  // }
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
 
-  // showArticleAlert(): void {
-  //   Swal.fire({
-  //     icon: 'info',
-  //     title: 'Write Article',
-  //     text: 'Article writing feature is coming soon!',
-  //     confirmButtonColor: '#0a66c2'
-  //   });
-  // }
+    return date.toLocaleDateString();
+  }
 
   onSubmit(): void {
-    if (this.editPostForm.valid) {
+    if (this.editPostForm.valid && this.characterCount <= 2000) {
       this.submitting = true;
 
       const postData: PostUpdate = {
@@ -985,8 +1052,8 @@ export class EditPostComponent implements OnInit {
           if (response.success) {
             Swal.fire({
               icon: 'success',
-              title: 'Updated!',
-              text: 'Your post has been updated successfully',
+              title: 'Updated Successfully!',
+              text: 'Your post has been updated',
               timer: 1500,
               showConfirmButton: false,
               background: '#fff',
@@ -999,7 +1066,8 @@ export class EditPostComponent implements OnInit {
               icon: 'error',
               title: 'Error',
               text: response.message || 'Failed to update post',
-              confirmButtonColor: '#0a66c2'
+              confirmButtonColor: '#0a66c2',
+              background: '#fff'
             });
           }
           this.submitting = false;
@@ -1010,7 +1078,8 @@ export class EditPostComponent implements OnInit {
             icon: 'error',
             title: 'Error',
             text: 'An error occurred while updating the post',
-            confirmButtonColor: '#0a66c2'
+            confirmButtonColor: '#0a66c2',
+            background: '#fff'
           });
           this.submitting = false;
         }
@@ -1024,21 +1093,4 @@ export class EditPostComponent implements OnInit {
       });
     }
   }
-
-  loadCurrentUserProfilePicture(): void {
-  if (this.currentUser) {
-    this.apiService.getUserById(this.currentUser.id).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.currentUserProfilePicture = response.data.profilePicture 
-            ? this.apiService.getImageUrl(response.data.profilePicture)
-            : '';
-        }
-      },
-      error: (error) => {
-        console.error('Error loading user profile picture:', error);
-      }
-    });
-  }
-}
 }

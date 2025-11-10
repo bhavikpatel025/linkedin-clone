@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core'; 
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ConnectionService } from '../../services/connection.service';
@@ -7,7 +7,7 @@ import { SharedStateService } from '../../services/shared-state.service';
 import { NotificationService } from '../../services/notification.service';
 import { UserConnection, ConnectionResponse } from '../../models/models';
 import { CreateNotification } from '../../models/notification';
-import { Subscription } from 'rxjs'; 
+import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 import { ApiService } from 'src/app/services/api.service';
 
@@ -79,13 +79,19 @@ import { ApiService } from 'src/app/services/api.service';
                       [class.new-request]="isNewPendingRequest(connection)"
                     >
                       <div class="d-flex align-items-center">
-                       <div class="user-avatar me-3">
-  @if (connection.profilePicture) {
-    <img [src]="getProfilePictureUrl(connection.profilePicture)" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle fs-2 text-muted"></i>
-  }
-</div>
+                        <div class="user-avatar me-3">
+                          @if (connection.profilePicture) {
+                          <img
+                            [src]="
+                              getProfilePictureUrl(connection.profilePicture)
+                            "
+                            alt="Profile"
+                            class="avatar-image"
+                          />
+                          } @else {
+                          <i class="bi bi-person-circle fs-2 text-muted"></i>
+                          }
+                        </div>
                         <div>
                           <h6 class="mb-1 fw-bold">{{ connection.name }}</h6>
                           <small class="text-muted">{{
@@ -106,7 +112,10 @@ import { ApiService } from 'src/app/services/api.service';
                             </small>
                           </div>
                           <!-- ADD: New request badge -->
-                          <div *ngIf="isNewPendingRequest(connection)" class="mt-1">
+                          <div
+                            *ngIf="isNewPendingRequest(connection)"
+                            class="mt-1"
+                          >
                             <span class="badge bg-warning text-dark">New</span>
                           </div>
                         </div>
@@ -145,14 +154,18 @@ import { ApiService } from 'src/app/services/api.service';
                     <div
                       class="d-flex align-items-center justify-content-between p-3 border rounded"
                     >
-                      <div class="d-flex align-items-center">                        
-  <div class="user-avatar me-3">
-  @if (user.profilePicture) {
-    <img [src]="getProfilePictureUrl(user.profilePicture)" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle fs-2 text-muted"></i>
-  }
-</div>
+                      <div class="d-flex align-items-center">
+                        <div class="user-avatar me-3">
+                          @if (user.profilePicture) {
+                          <img
+                            [src]="getProfilePictureUrl(user.profilePicture)"
+                            alt="Profile"
+                            class="avatar-image"
+                          />
+                          } @else {
+                          <i class="bi bi-person-circle fs-2 text-muted"></i>
+                          }
+                        </div>
                         <div>
                           <h6 class="mb-1 fw-bold">{{ user.name }}</h6>
                           <small class="text-muted">{{ user.roleName }}</small>
@@ -204,13 +217,19 @@ import { ApiService } from 'src/app/services/api.service';
                       class="d-flex align-items-center justify-content-between p-3 border rounded"
                     >
                       <div class="d-flex align-items-center">
-                       <div class="user-avatar me-3">
-  @if (connection.profilePicture) {
-    <img [src]="getProfilePictureUrl(connection.profilePicture)" alt="Profile" class="avatar-image">
-  } @else {
-    <i class="bi bi-person-circle fs-2 text-muted"></i>
-  }
-</div>
+                        <div class="user-avatar me-3">
+                          @if (connection.profilePicture) {
+                          <img
+                            [src]="
+                              getProfilePictureUrl(connection.profilePicture)
+                            "
+                            alt="Profile"
+                            class="avatar-image"
+                          />
+                          } @else {
+                          <i class="bi bi-person-circle fs-2 text-muted"></i>
+                          }
+                        </div>
                         <div>
                           <h6 class="mb-1 fw-bold">{{ connection.name }}</h6>
                           <small class="text-muted">{{
@@ -277,14 +296,14 @@ import { ApiService } from 'src/app/services/api.service';
         align-items: center;
         justify-content: center;
         background-color: #eef3f8;
-         overflow: hidden;
+        overflow: hidden;
       }
       .avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+      }
 
       .card {
         border-radius: 8px;
@@ -305,9 +324,15 @@ import { ApiService } from 'src/app/services/api.service';
       }
 
       @keyframes pulse-highlight {
-        0% { background-color: rgba(40, 167, 69, 0.05); }
-        50% { background-color: rgba(40, 167, 69, 0.1); }
-        100% { background-color: rgba(40, 167, 69, 0.05); }
+        0% {
+          background-color: rgba(40, 167, 69, 0.05);
+        }
+        50% {
+          background-color: rgba(40, 167, 69, 0.1);
+        }
+        100% {
+          background-color: rgba(40, 167, 69, 0.05);
+        }
       }
 
       @media (max-width: 768px) {
@@ -377,7 +402,8 @@ import { ApiService } from 'src/app/services/api.service';
     `,
   ],
 })
-export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
+export class NetworkComponent implements OnInit, OnDestroy {
+  // ADD OnDestroy
   connections: UserConnection[] = [];
   pendingConnections: UserConnection[] = [];
   suggestions: UserConnection[] = [];
@@ -385,7 +411,7 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
   pendingCount: number = 0;
   currentUserId: number;
   hasPendingRequests: boolean = false;
-   profilePictureUrl: string = '';
+  profilePictureUrl: string = '';
 
   // ADD: SignalR properties
   private subscriptions = new Subscription();
@@ -399,7 +425,7 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
     private authService: AuthService,
     private sharedStateService: SharedStateService,
     private notificationService: NotificationService,
-     private apiService: ApiService 
+    private apiService: ApiService
   ) {
     this.currentUserId = this.authService.getCurrentUserId() ?? 0;
   }
@@ -407,7 +433,7 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
   ngOnInit() {
     this.loadNetworkData();
     this.setupRealTimeListeners();
-     this.loadCurrentUserProfilePicture();
+    this.loadCurrentUserProfilePicture();
   }
 
   // ADD: Clean up subscriptions
@@ -419,31 +445,39 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
   private setupRealTimeListeners(): void {
     // Listen for connection state
     this.subscriptions.add(
-      this.notificationService.connectionState$.subscribe(connected => {
+      this.notificationService.connectionState$.subscribe((connected) => {
         this.isConnected = connected;
-        console.log('Network Component - SignalR connection:', connected ? 'Connected' : 'Disconnected');
+        console.log(
+          'Network Component - SignalR connection:',
+          connected ? 'Connected' : 'Disconnected'
+        );
       })
     );
 
     // Listen for real-time notifications (for new connection requests)
     this.subscriptions.add(
-      this.notificationService.realTimeNotifications$.subscribe(notification => {
-        if (notification.type === 'connection_request' || notification.type === 'connection_accepted') {
-          this.handleRealTimeConnectionNotification(notification);
+      this.notificationService.realTimeNotifications$.subscribe(
+        (notification) => {
+          if (
+            notification.type === 'connection_request' ||
+            notification.type === 'connection_accepted'
+          ) {
+            this.handleRealTimeConnectionNotification(notification);
+          }
         }
-      })
+      )
     );
   }
 
   // ADD THIS NEW METHOD: Handle real-time connection notifications
   private handleRealTimeConnectionNotification(notification: any): void {
     console.log('Real-time connection notification:', notification);
-    
+
     if (notification.type === 'connection_request') {
       // New connection request received - refresh pending connections
       this.loadPendingConnections();
       this.hasNewPendingRequests = true;
-      
+
       // Show notification
       Swal.fire({
         icon: 'info',
@@ -451,20 +485,20 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
         text: `You have a new connection request from ${notification.senderName}`,
         timer: 3000,
         showConfirmButton: false,
-        position: 'top-end'
+        position: 'top-end',
       });
     } else if (notification.type === 'connection_accepted') {
       // Connection request accepted - refresh connections
       this.loadConnections();
       this.loadConnectionCount();
-      
+
       Swal.fire({
         icon: 'success',
         title: 'Connection Accepted',
         text: `${notification.senderName} accepted your connection request`,
         timer: 3000,
         showConfirmButton: false,
-        position: 'top-end'
+        position: 'top-end',
       });
     }
   }
@@ -510,9 +544,9 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
           this.pendingCount = this.pendingConnections.length;
           this.hasPendingRequests = this.pendingCount > 0;
           this.sharedStateService.updatePendingCount(this.pendingCount);
-          
+
           // ADD: Track new pending requests for highlighting
-          this.pendingConnections.forEach(connection => {
+          this.pendingConnections.forEach((connection) => {
             this.newPendingRequestIds.add(connection.id);
           });
         }
@@ -803,35 +837,38 @@ export class NetworkComponent implements OnInit, OnDestroy { // ADD OnDestroy
         mutualConnections: user.mutualConnections,
         connectionId: 0,
         connectionDate: '',
-         profilePicture: user.profilePicture
+        profilePicture: user.profilePicture,
       };
 
       this.suggestions.unshift(suggestion);
     }
   }
   // ✅ ADD THIS METHOD (Same pattern as other components)
-loadCurrentUserProfilePicture(): void {
-  if (this.currentUserId) {
-    this.apiService.getUserById(this.currentUserId).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.profilePictureUrl = response.data.profilePicture 
-            ? this.apiService.getImageUrl(response.data.profilePicture)
-            : '';
-          console.log('Current user profile picture loaded:', this.profilePictureUrl);
-        }
-      },
-      error: (error) => {
-        console.error('Error loading user profile picture:', error);
-      }
-    });
+  loadCurrentUserProfilePicture(): void {
+    if (this.currentUserId) {
+      this.apiService.getUserById(this.currentUserId).subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.profilePictureUrl = response.data.profilePicture
+              ? this.apiService.getImageUrl(response.data.profilePicture)
+              : '';
+            console.log(
+              'Current user profile picture loaded:',
+              this.profilePictureUrl
+            );
+          }
+        },
+        error: (error) => {
+          console.error('Error loading user profile picture:', error);
+        },
+      });
+    }
   }
-}
-// ✅ ADD THIS METHOD (Uses your existing ApiService method)
-getProfilePictureUrl(profilePicturePath: string | undefined): string {
-  if (!profilePicturePath) {
-    return '';
+  // ✅ ADD THIS METHOD (Uses your existing ApiService method)
+  getProfilePictureUrl(profilePicturePath: string | undefined): string {
+    if (!profilePicturePath) {
+      return '';
+    }
+    return this.apiService.getImageUrl(profilePicturePath);
   }
-  return this.apiService.getImageUrl(profilePicturePath);
-}
 }

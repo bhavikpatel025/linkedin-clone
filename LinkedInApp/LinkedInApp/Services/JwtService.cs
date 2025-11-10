@@ -104,5 +104,19 @@ namespace LinkedInApp.Services
                 .Replace("+", "-")
                 .Replace("=", "");
         }
+        public int GetUserIdFromClaims(ClaimsPrincipal user)
+        {
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                             ?? user.FindFirst("userId")?.Value
+                             ?? user.FindFirst("sub")?.Value;
+
+            if (int.TryParse(userIdClaim, out var userId))
+            {
+                return userId;
+            }
+
+            throw new UnauthorizedAccessException("User ID not found in token");
+        }
+
     }
 }

@@ -6,8 +6,8 @@ export interface User {
   phoneNumber: string;
   roleId: number;
   roleName: string;
-   profilePicture?: string;
-    location?: string; 
+  profilePicture?: string;
+  location?: string; 
   bio?: string; 
   createdDate: string;
   skills: Skill[];
@@ -57,13 +57,13 @@ export interface Post {
   id: number;
   userId: number;
   userName: string;
-   userProfilePicture?: string;
+  userProfilePicture?: string;
   description: string;
   photoPath?: string;
   createdDate: string;
   updatedDate?: string;
   likesCount: number;
-   isSavedByCurrentUser?: boolean;
+  isSavedByCurrentUser?: boolean;
   commentsCount: number;
   isLikedByCurrentUser: boolean;
   comments: Comment[];
@@ -89,6 +89,7 @@ export interface SavedPost {
   savedAt: string;
   post?: Post;
 }
+
 export interface SavePostResult {
   id: number;
   userId: number;
@@ -105,13 +106,14 @@ export interface SavedPostResponse {
   success: boolean;
   message: string;
   data?: SavedPost;
+  errors: string[];
 }
 
 export interface UserSavedPostsResponse {
   success: boolean;
   message: string;
   data?: SavedPost[];
-   errors: string[];
+  errors: string[];
 }
 
 export interface Comment {
@@ -119,11 +121,11 @@ export interface Comment {
   postId: number;
   userId: number;
   userName: string;
-   userProfilePicture?: string;
+  userProfilePicture?: string;
   content: string;
   createdDate: string;
-   canDelete?: boolean;
-    replies?: Reply[]; 
+  canDelete?: boolean;
+  replies?: Reply[]; 
   showReplies?: boolean; 
   showReplyForm?: boolean;
 }
@@ -147,13 +149,12 @@ export interface ApiResponse<T> {
 }
 
 export interface CurrentUser {
-// headline: any;
   id: number;
   name: string;
   email: string;
   roleId: number;
   roleName: string;
-   profilePicture?: string;
+  profilePicture?: string;
 }
 
 export interface Connection {
@@ -182,29 +183,13 @@ export interface UserConnection {
   connectionId: number;
   name: string;
   roleName: string;
-   profilePicture?: string;
+  profilePicture?: string;
   avatar?: string;
   location?: string;
   connectionDate: string;
   mutualConnections: number;
   headline?: string;
   industry?: string;
-}
-
-// export interface CommentDto {
-//   id: number;
-//   content: string;
-//   createdDate: string;
-//   userId: number;
-//   userName: string;
-//   canDelete?: boolean; 
-// }
-
-export interface CommentDeleteResponse {
-  success: boolean;
-  message: string;
-  data?: boolean;
-  errors?: string[];
 }
 
 export interface Reply {
@@ -214,7 +199,7 @@ export interface Reply {
   commentId: number;
   userId: number;
   userName: string;
-   userProfilePicture?: string;
+  userProfilePicture?: string;
   canDelete?: boolean;
 }
 
@@ -229,4 +214,126 @@ export interface ReplyDeleteResponse {
   message: string;
   data?: boolean;
   errors?: string[];
+}
+
+// Enhanced Chat Interfaces
+export interface Chat {
+  id: number;
+  type: 'direct' | 'group';
+  groupName?: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unreadCount: number;
+  participants: ChatParticipant[];
+  isOnline?: boolean;
+  lastSeen?: string;
+  isMuted?: boolean;
+  isArchived?: boolean;
+  groupDescription?: string;
+  groupImage?: string;
+}
+
+export interface ChatParticipant {
+  userId: number;
+  userName: string;
+  profilePicture?: string;
+  role: string;
+  isOnline?: boolean;
+  lastSeen?: string;
+  joinedAt?: string;
+}
+
+export interface Message {
+  id: number;
+  chatId: number;
+  senderId: number;
+  senderName?: string;
+  senderProfilePicture?: string;
+  content: string;
+  messageType: 'text' | 'image' | 'file' | 'system';
+  isRead: boolean;
+  createdAt: string;
+  readAt?: string;
+  reactions?: MessageReaction[];
+  replyTo?: number;
+  isEdited?: boolean;
+  editedAt?: string;
+  replyToMessage?: Message;
+  attachments?: MessageAttachment[];
+}
+
+export interface MessageAttachment {
+  id: number;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  thumbnailUrl?: string;
+}
+
+export interface MessageReaction {
+  userId: number;
+  userName: string;
+  emoji: string;
+  createdAt: string;
+}
+
+export interface UserTyping {
+  chatId: number;
+  userId: number;
+  userName: string;
+  isTyping: boolean;
+}
+
+export interface MessageRead {
+  chatId: number;
+  messageId: number;
+  userId: number;
+  readAt: string;
+}
+
+export interface CreateMessage {
+  chatId: number;
+  content: string;
+  messageType: string;
+  replyTo?: number;
+  attachments?: File[];
+}
+
+export interface CreateChat {
+  participantIds: number[];
+  groupName?: string;
+  type: 'direct' | 'group';
+  groupDescription?: string;
+  groupImage?: string;
+}
+
+export interface ChatAction {
+  chatId: number;
+  action: 'mute' | 'unmute' | 'archive' | 'unarchive';
+  value: boolean;
+}
+export interface CommentDeleteResponse {
+  success: boolean;
+  message: string;
+  data?: boolean;
+  errors?: string[];
+}
+
+
+
+export interface ChatParticipantAction {
+  chatId: number;
+  participantId: number;
+  action: 'add' | 'remove';
+}
+
+export interface ChatSearch {
+  query?: string;
+  type?: 'direct' | 'group';
+  unreadOnly?: boolean;
+  page?: number;
+  pageSize?: number;
 }

@@ -20,6 +20,9 @@ namespace LinkedInApp.Data
         public DbSet<Reply> Replies { get; set; }
         public DbSet<Connection> Connections { get; set; }
         public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Chat> Chats { get; set; }
+        public DbSet<ChatParticipant> ChatParticipants { get; set; }
+        public DbSet<Message> Messages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -81,13 +84,13 @@ namespace LinkedInApp.Data
                 entity.HasOne(sp => sp.User)
                       .WithMany(u => u.SavedPosts)
                       .HasForeignKey(sp => sp.UserId)
-                      .OnDelete(DeleteBehavior.Restrict); // CHANGED FROM Cascade
+                      .OnDelete(DeleteBehavior.Restrict); 
 
                 // Relationship: Post can be saved by multiple users - CHANGE TO Restrict or NoAction
                 entity.HasOne(sp => sp.Post)
                       .WithMany(p => p.SavedPosts)
                       .HasForeignKey(sp => sp.PostId)
-                      .OnDelete(DeleteBehavior.Restrict); // CHANGED FROM Cascade
+                      .OnDelete(DeleteBehavior.Restrict); 
 
                 // Configure dates
                 entity.Property(sp => sp.SavedAt)
@@ -221,6 +224,36 @@ namespace LinkedInApp.Data
                 entity.HasIndex(n => new { n.UserId, n.IsRead });
                 entity.HasIndex(n => n.CreatedDate);
                 entity.HasIndex(n => n.SenderId);
+            });
+
+            modelBuilder.Entity<Chat>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Type).HasMaxLength(20);
+            });
+
+            // ChatParticipant configurations
+            modelBuilder.Entity<ChatParticipant>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(cp => cp.Chat)
+                      .WithMany(c => c.Participants)
+                      .HasForeignKey(cp => cp.ChatId);
+                entity.HasOne(cp => cp.User)
+                      .WithMany()
+                      .HasForeignKey(cp => cp.UserId);
+            });
+
+            // Message configurations
+            modelBuilder.Entity<Message>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(m => m.Chat)
+                      .WithMany(c => c.Messages)
+                      .HasForeignKey(m => m.ChatId);
+                entity.HasOne(m => m.Sender)
+                      .WithMany()
+                      .HasForeignKey(m => m.SenderId);
             });
 
             // Seed data

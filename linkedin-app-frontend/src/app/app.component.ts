@@ -8,6 +8,7 @@ import { filter } from 'rxjs/operators';
 import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 import { FooterComponent } from "./components/footer/footer.component"; 
+import { SignalrChatService } from './services/signalr-chat.service';
 
 @Component({
   selector: 'app-root',
@@ -278,7 +279,8 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private authService: AuthService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+      private signalrChatService: SignalrChatService
   ) {}
 
   ngOnInit() {
@@ -328,48 +330,125 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private async handleAuthenticationChange(user: any): Promise<void> {
-    if (user) {
-      console.log('👤 User logged in, starting SignalR connection...');
-      try {
-        await this.notificationService.initializeConnection();
-        console.log('✅ SignalR connection started successfully');
-      } catch (error) {
-        console.error('❌ Failed to start SignalR connection:', error);
-        // Retry after 3 seconds
-        setTimeout(() => this.handleAuthenticationChange(user), 3000);
-      }
-    } else {
-      console.log('👤 User logged out, stopping SignalR connection...');
+  if (user) {
+    console.log('👤 User logged in, starting connections...');
+    try {
+      // Start notification connection
+      await this.notificationService.initializeConnection();
+      console.log('✅ Notification connection started successfully');
+      
+      // Start chat connection
+      await this.signalrChatService.startConnection();
+      console.log('✅ Chat connection started successfully');
+      
+      // ✅ ADD THIS: Initialize all real-time listeners after connections are established
+      this.initializeRealTimeNotifications();
+      
+    } catch (error) {
+      console.error('❌ Failed to start connections:', error);
+      // Retry after delay with exponential backoff
+      setTimeout(() => this.handleAuthenticationChange(user), 5000);
+    }
+  } else {
+    console.log('👤 User logged out, stopping connections...');
+    try {
       await this.notificationService.stopConnection();
+      await this.signalrChatService.disconnect();
+      // Clear any existing toasts on logout
+      this.globalToasts = [];
+    } catch (error) {
+      console.error('Error stopping connections:', error);
     }
   }
+}
 
-  private initializeRealTimeNotifications(): void {
-    console.log('🔔 Setting up global notification listeners');
+// Add global chat message handler
+private initializeChatNotifications(): void {
+  console.log('💬 Setting up global chat message listeners');
 
-    // Listen for real-time notifications - THIS SHOULD WORK FROM ANY PAGE
-    this.subscriptions.add(
-      this.notificationService.realTimeNotifications$.subscribe(notification => {
-        console.log('🌍 GLOBAL NOTIFICATION RECEIVED IN APP COMPONENT:', notification);
-        this.handleNewNotification(notification);
-      })
-    );
+  // Listen for new chat messages
+  this.subscriptions.add(
+    this.signalrChatService.messageReceived$.subscribe(message => {
+      console.log('💌 GLOBAL CHAT MESSAGE RECEIVED:', message);
+      this.handleNewChatMessage(message);
+    })
+  );
 
-    // Listen for connection state changes
-    this.subscriptions.add(
-      this.notificationService.connectionState$.subscribe(connected => {
-        console.log('🔌 Global Connection State:', connected ? 'Connected' : 'Disconnected');
-      })
-    );
+  // Listen for chat connection state
+  this.subscriptions.add(
+    this.signalrChatService.connectionState$.subscribe(connected => {
+      console.log('🔌 Global Chat Connection State:', connected ? 'Connected' : 'Disconnected');
+    })
+  );
+}
 
-    // Listen for unread count updates
-    this.subscriptions.add(
-      this.notificationService.unreadCount$.subscribe(count => {
-        console.log('🔢 Global Unread Count Update:', count);
-      })
-    );
+private handleNewChatMessage(message: any): void {
+  console.log('💌 Handling new chat message globally:', message);
+  
+  // Don't show notifications if we're on the chat page
+  const isOnChatPage = this.router.url.includes('/chat');
+  
+  if (isOnChatPage) {
+    console.log('💬 On chat page - message will be handled there');
+    return;
   }
 
+  // Show global toast notification for new messages not from current user
+  if (message.senderId !== this.authService.getCurrentUserId()) {
+    this.showChatToast(message);
+  }
+}
+
+private showChatToast(message: any): void {
+  const toast = {
+    id: Date.now(),
+    type: 'info',
+    title: `New message from ${message.senderName}`,
+    message: message.content,
+    time: this.getCurrentTime(),
+    chatId: message.chatId,
+    show: false,
+    hiding: false
+  };
+
+  this.globalToasts.push(toast);
+  
+  setTimeout(() => {
+    toast.show = true;
+  }, 100);
+
+  setTimeout(() => {
+    this.removeGlobalToast(toast);
+  }, 6000);
+}
+ private initializeRealTimeNotifications(): void {
+  console.log('🔔 Setting up global notification listeners');
+
+  // Listen for real-time notifications
+  this.subscriptions.add(
+    this.notificationService.realTimeNotifications$.subscribe(notification => {
+      console.log('🌍 GLOBAL NOTIFICATION RECEIVED IN APP COMPONENT:', notification);
+      this.handleNewNotification(notification);
+    })
+  );
+
+  // Listen for connection state changes
+  this.subscriptions.add(
+    this.notificationService.connectionState$.subscribe(connected => {
+      console.log('🔌 Global Connection State:', connected ? 'Connected' : 'Disconnected');
+    })
+  );
+
+  // Listen for unread count updates
+  this.subscriptions.add(
+    this.notificationService.unreadCount$.subscribe(count => {
+      console.log('🔢 Global Unread Count Update:', count);
+    })
+  );
+
+  // ✅ ADD THIS: Initialize chat notifications
+  this.initializeChatNotifications();
+}
   private handleNewNotification(notification: any): void {
     console.log('🆕 Handling new notification globally:', notification);
     
@@ -446,9 +525,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
 handleGlobalToastClick(toast: any): void {
   this.removeGlobalToast(toast);
-  
-  // ALWAYS navigate to notifications page when toast is clicked
-  this.router.navigate(['/notifications']);
+   if (toast.chatId) {
+    // Navigate to specific chat
+    this.router.navigate(['/chat']);
+  } else {
+    // Navigate to notifications page
+    this.router.navigate(['/notifications']);
+  }
 }
 
   private navigateBasedOnNotification(notification: any): void {
@@ -548,4 +631,5 @@ handleGlobalToastClick(toast: any): void {
       });
     }
   }
+
 }

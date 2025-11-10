@@ -90,6 +90,18 @@ namespace LinkedInApp.Profiles
 
             CreateMap<SavePostRequestDto, SavedPost>();
             CreateMap<SavedPost, SavedPostDto>();
+
+            CreateMap<Message, MessageDto>()
+          .ForMember(dest => dest.SenderName,
+              opt => opt.MapFrom(src => src.Sender != null ? src.Sender.Name : "Unknown User"))
+          .ForMember(dest => dest.SenderProfilePicture,
+              opt => opt.MapFrom(src => src.Sender != null ? src.Sender.ProfilePicture ?? string.Empty : string.Empty));
+
+            CreateMap<ChatParticipant, ChatParticipantDto>()
+                .ForMember(dest => dest.UserName,
+                    opt => opt.MapFrom(src => src.User != null ? src.User.Name : "Unknown User"))
+                .ForMember(dest => dest.ProfilePicture,
+                    opt => opt.MapFrom(src => src.User != null ? src.User.ProfilePicture ?? string.Empty : string.Empty));
         }
     }
 }
