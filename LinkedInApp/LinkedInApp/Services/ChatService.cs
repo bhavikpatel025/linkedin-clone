@@ -12,12 +12,14 @@ namespace LinkedInApp.Services
         private readonly ApplicationDbContext _context;
         private readonly IHubContext<ChatHub> _hubContext;
         private readonly ILogger<ChatService> _logger;
+        private readonly IFileService _fileService;
 
-        public ChatService(ApplicationDbContext context, IHubContext<ChatHub> hubContext, ILogger<ChatService> logger)
+        public ChatService(ApplicationDbContext context, IHubContext<ChatHub> hubContext, ILogger<ChatService> logger, IFileService fileService)
         {
             _context = context;
             _hubContext = hubContext;
             _logger = logger;
+            _fileService = fileService;
         }
 
         public async Task<ApiResponse<ChatDto>> CreateChatAsync(CreateChatDto createChatDto, int currentUserId)
@@ -317,11 +319,17 @@ namespace LinkedInApp.Services
                 {
                     ChatId = createMessageDto.ChatId,
                     SenderId = senderId,
-                    Content = createMessageDto.Content.Trim(),
+                    Content = createMessageDto.Content?.Trim() ?? string.Empty,
                     MessageType = createMessageDto.MessageType ?? "text",
                     CreatedAt = DateTime.UtcNow,
                     IsRead = false
                 };
+
+                // Handle file uploads
+                if (createMessageDto.Files != null && createMessageDto.Files.Any())
+                {
+                    await ProcessMessageFilesAsync(message, createMessageDto.Files);
+                }
 
                 _context.Messages.Add(message);
 
@@ -332,14 +340,16 @@ namespace LinkedInApp.Services
                     chat.UpdatedAt = DateTime.UtcNow;
                 }
 
+                // SAVE CHANGES - This was missing for file attachments
                 await _context.SaveChangesAsync();
 
-                // Get message with sender info
-                var messageWithSender = await _context.Messages
+                // RELOAD the message with all relationships INCLUDING attachments
+                var messageWithDetails = await _context.Messages
                     .Include(m => m.Sender)
+                    .Include(m => m.Attachments) // Make sure this is included
                     .FirstOrDefaultAsync(m => m.Id == message.Id);
 
-                if (messageWithSender == null)
+                if (messageWithDetails == null)
                 {
                     return new ApiResponse<MessageDto>
                     {
@@ -348,13 +358,13 @@ namespace LinkedInApp.Services
                     };
                 }
 
-                var messageDto = MapToMessageDto(messageWithSender);
+                var messageDto = MapToMessageDto(messageWithDetails);
 
                 // Send real-time notification via SignalR
                 await _hubContext.Clients.Group($"chat_{createMessageDto.ChatId}").SendAsync("ReceiveMessage", messageDto);
 
-                _logger.LogInformation("Message {MessageId} sent to chat {ChatId} by user {SenderId}",
-                    message.Id, createMessageDto.ChatId, senderId);
+                _logger.LogInformation("Message {MessageId} with {FileCount} files sent to chat {ChatId} by user {SenderId}",
+                    message.Id, createMessageDto.Files?.Count ?? 0, createMessageDto.ChatId, senderId);
 
                 return new ApiResponse<MessageDto>
                 {
@@ -373,6 +383,62 @@ namespace LinkedInApp.Services
                     Message = "Failed to send message",
                     Errors = new List<string> { ex.Message }
                 };
+            }
+        }
+
+        private async Task ProcessMessageFilesAsync(Message message, List<IFormFile> files)
+        {
+            foreach (var file in files)
+            {
+                var fileType = _fileService.GetFileType(file.FileName);
+                var uploadPath = _fileService.GetUploadPath(fileType);
+
+                // Generate thumbnail for images, not for other file types
+                bool generateThumbnail = fileType == "image";
+                var uploadResult = await _fileService.UploadFileAsync(file, uploadPath, generateThumbnail);
+
+                if (uploadResult.Success)
+                {
+                    var attachment = new MessageAttachment
+                    {
+                        FileName = uploadResult.FileName,
+                        FilePath = uploadResult.FileUrl,
+                        FileType = fileType,
+                        FileSize = file.Length,
+                        ThumbnailPath = uploadResult.ThumbnailUrl,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    message.Attachments.Add(attachment);
+
+                    // Update message content based on files
+                    if (string.IsNullOrEmpty(message.Content))
+                    {
+                        if (files.Count == 1)
+                        {
+                            message.Content = $"[{fileType.ToUpper()} file: {uploadResult.FileName}]";
+                        }
+                        else
+                        {
+                            message.Content = $"[{files.Count} files]";
+                        }
+                    }
+
+                    // Set message type based on files
+                    if (files.Count == 1)
+                    {
+                        message.MessageType = fileType;
+                    }
+                    else
+                    {
+                        message.MessageType = "files";
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to upload file: {FileName}, Error: {Error}",
+                        file.FileName, uploadResult.Message);
+                }
             }
         }
 
@@ -395,6 +461,7 @@ namespace LinkedInApp.Services
                 var messages = await _context.Messages
                     .Where(m => m.ChatId == chatId)
                     .Include(m => m.Sender)
+                    .Include(m => m.Attachments) // CRITICAL: Include attachments
                     .OrderByDescending(m => m.CreatedAt)
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
@@ -624,7 +691,7 @@ namespace LinkedInApp.Services
         {
             if (message == null) return null;
 
-            return new MessageDto
+            var messageDto = new MessageDto
             {
                 Id = message.Id,
                 ChatId = message.ChatId,
@@ -633,10 +700,35 @@ namespace LinkedInApp.Services
                 SenderProfilePicture = message.Sender?.ProfilePicture ?? string.Empty,
                 Content = message.Content,
                 MessageType = message.MessageType,
+                FilePath = message.FilePath,
+                FileName = message.FileName,
+                FileSize = message.FileSize,
+                FileType = message.FileType,
+                ThumbnailPath = message.ThumbnailPath,
                 IsRead = message.IsRead,
                 CreatedAt = message.CreatedAt,
-                ReadAt = message.ReadAt
+                ReadAt = message.ReadAt,
+                Attachments = new List<MessageAttachmentDto>()
             };
+
+            // Map attachments
+            if (message.Attachments != null)
+            {
+                foreach (var attachment in message.Attachments)
+                {
+                    messageDto.Attachments.Add(new MessageAttachmentDto
+                    {
+                        Id = attachment.Id,
+                        FileName = attachment.FileName,
+                        FileUrl = attachment.FilePath,
+                        FileType = attachment.FileType,
+                        FileSize = attachment.FileSize,
+                        ThumbnailUrl = attachment.ThumbnailPath
+                    });
+                }
+            }
+
+            return messageDto;
         }
     }
 }

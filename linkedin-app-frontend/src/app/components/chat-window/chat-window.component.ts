@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ChatService } from '../../services/chat.service';
 import { SignalrChatService } from '../../services/signalr-chat.service';
 import { AuthService } from '../../services/auth.service';
-import { Chat, ChatParticipant, Message, UserTyping } from '../../models/models';
+import { Chat, ChatParticipant, Message, UserTyping, CreateMessage, FileUploadProgress, MessageAttachment } from '../../models/models';
 import { ApiService } from '../../services/api.service';
 import { Subscription, debounceTime } from 'rxjs';
+import { FileUploadService } from '../../services/file-upload.service';
 
 @Component({
   selector: 'app-chat-window',
@@ -116,7 +117,81 @@ import { Subscription, debounceTime } from 'rxjs';
                       <span>Replying to a message</span>
                     </div>
 
-                    <div class="message-text">{{ message.content }}</div>
+                    <!-- File Attachments -->
+                    <div *ngIf="message.attachments && message.attachments.length > 0" class="message-attachments">
+                      <div *ngFor="let attachment of message.attachments" class="attachment-item">
+                        
+                        <!-- Image Attachment -->
+                        <div *ngIf="attachment.fileType === 'image'" class="image-attachment" (click)="openAttachmentViewer(attachment)">
+                          <img [src]="getAttachmentUrl(attachment)" 
+                               [alt]="attachment.fileName"
+                               class="attachment-image"
+                               (error)="handleAttachmentError($event)">
+                          <div class="attachment-overlay">
+                            <button class="btn-download" (click)="downloadAttachmentDirect(attachment); $event.stopPropagation()">
+                              <i class="bi bi-download"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Video Attachment -->
+                        <div *ngIf="attachment.fileType === 'video'" class="video-attachment">
+                          <video controls class="attachment-video">
+                            <source [src]="getAttachmentUrl(attachment)" [type]="getVideoMimeType(attachment.fileName)">
+                          </video>
+                          <div class="video-info">
+                            <span class="video-name">{{ attachment.fileName }}</span>
+                            <button class="btn-download" (click)="downloadAttachment(attachment)">
+                              <i class="bi bi-download"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Audio Attachment -->
+                        <div *ngIf="attachment.fileType === 'audio'" class="audio-attachment">
+                          <div class="audio-player">
+                            <audio controls class="attachment-audio">
+                              <source [src]="getAttachmentUrl(attachment)" [type]="getAudioMimeType(attachment.fileName)">
+                            </audio>
+                            <div class="audio-info">
+                              <span class="audio-name">{{ attachment.fileName }}</span>
+                              <span class="audio-size">{{ formatFileSize(attachment.fileSize) }}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Document Attachment -->
+                        <div *ngIf="isDocumentType(attachment.fileType)" class="document-attachment">
+                          <div class="document-icon">
+                            <i [class]="getDocumentIcon(attachment.fileType)"></i>
+                          </div>
+                          <div class="document-info">
+                            <span class="document-name">{{ attachment.fileName }}</span>
+                            <span class="document-size">{{ formatFileSize(attachment.fileSize) }}</span>
+                          </div>
+                          <button class="btn-download" (click)="downloadAttachment(attachment)">
+                            <i class="bi bi-download"></i>
+                          </button>
+                        </div>
+
+                        <!-- Other File Types -->
+                        <div *ngIf="isOtherFileType(attachment.fileType)" class="file-attachment">
+                          <div class="file-icon">
+                            <i class="bi bi-file-earmark"></i>
+                          </div>
+                          <div class="file-info">
+                            <span class="file-name">{{ attachment.fileName }}</span>
+                            <span class="file-size">{{ formatFileSize(attachment.fileSize) }}</span>
+                          </div>
+                          <button class="btn-download" (click)="downloadAttachment(attachment)">
+                            <i class="bi bi-download"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Text Content -->
+                    <div *ngIf="message.content" class="message-text">{{ message.content }}</div>
                     
                     <div class="message-meta">
                       <span class="message-time">{{ formatMessageTime(message.createdAt) }}</span>
@@ -142,7 +217,81 @@ import { Subscription, debounceTime } from 'rxjs';
                       <span>Replying to a message</span>
                     </div>
 
-                    <div class="message-text">{{ message.content }}</div>
+                    <!-- File Attachments (Same as received but with sent styling) -->
+                    <div *ngIf="message.attachments && message.attachments.length > 0" class="message-attachments">
+                      <div *ngFor="let attachment of message.attachments" class="attachment-item">
+                        
+                        <!-- Image Attachment -->
+                        <div *ngIf="attachment.fileType === 'image'" class="image-attachment" (click)="openAttachmentViewer(attachment)">
+                          <img [src]="getAttachmentUrl(attachment)" 
+                               [alt]="attachment.fileName"
+                               class="attachment-image"
+                               (error)="handleAttachmentError($event)">
+                          <div class="attachment-overlay">
+                            <button class="btn-download" (click)="downloadAttachment(attachment); $event.stopPropagation()">
+                              <i class="bi bi-download"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Video Attachment -->
+                        <div *ngIf="attachment.fileType === 'video'" class="video-attachment">
+                          <video controls class="attachment-video">
+                            <source [src]="getAttachmentUrl(attachment)" [type]="getVideoMimeType(attachment.fileName)">
+                          </video>
+                          <div class="video-info">
+                            <span class="video-name">{{ attachment.fileName }}</span>
+                            <button class="btn-download" (click)="downloadAttachment(attachment)">
+                              <i class="bi bi-download"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Audio Attachment -->
+                        <div *ngIf="attachment.fileType === 'audio'" class="audio-attachment">
+                          <div class="audio-player">
+                            <audio controls class="attachment-audio">
+                              <source [src]="getAttachmentUrl(attachment)" [type]="getAudioMimeType(attachment.fileName)">
+                            </audio>
+                            <div class="audio-info">
+                              <span class="audio-name">{{ attachment.fileName }}</span>
+                              <span class="audio-size">{{ formatFileSize(attachment.fileSize) }}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <!-- Document Attachment -->
+                        <div *ngIf="isDocumentType(attachment.fileType)" class="document-attachment">
+                          <div class="document-icon">
+                            <i [class]="getDocumentIcon(attachment.fileType)"></i>
+                          </div>
+                          <div class="document-info">
+                            <span class="document-name">{{ attachment.fileName }}</span>
+                            <span class="document-size">{{ formatFileSize(attachment.fileSize) }}</span>
+                          </div>
+                          <button class="btn-download" (click)="downloadAttachment(attachment)">
+                            <i class="bi bi-download"></i>
+                          </button>
+                        </div>
+
+                        <!-- Other File Types -->
+                        <div *ngIf="isOtherFileType(attachment.fileType)" class="file-attachment">
+                          <div class="file-icon">
+                            <i class="bi bi-file-earmark"></i>
+                          </div>
+                          <div class="file-info">
+                            <span class="file-name">{{ attachment.fileName }}</span>
+                            <span class="file-size">{{ formatFileSize(attachment.fileSize) }}</span>
+                          </div>
+                          <button class="btn-download" (click)="downloadAttachment(attachment)">
+                            <i class="bi bi-download"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Text Content -->
+                    <div *ngIf="message.content" class="message-text">{{ message.content }}</div>
                     
                     <div class="message-meta">
                       <span class="message-time">{{ formatMessageTime(message.createdAt) }}</span>
@@ -172,6 +321,50 @@ import { Subscription, debounceTime } from 'rxjs';
         </div>
       </div>
 
+      <!-- File Upload Progress -->
+      <div *ngIf="activeUploads.size > 0" class="upload-progress-container">
+        <div *ngFor="let upload of getActiveUploads()" class="upload-progress-item">
+          <div class="upload-info">
+            <i [class]="getFileIcon(upload.fileName)"></i>
+            <span class="upload-filename">{{ upload.fileName }}</span>
+          </div>
+          <div class="upload-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="upload.percentage"></div>
+            </div>
+            <span class="upload-percentage">{{ upload.percentage }}%</span>
+          </div>
+          <button *ngIf="upload.status === 'error'" class="btn-retry" (click)="retryUpload(upload.uploadId)">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+          <button class="btn-cancel" (click)="cancelUpload(upload.uploadId)">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Selected Files Preview -->
+      <div *ngIf="selectedFiles.length > 0" class="selected-files-preview">
+        <div *ngFor="let file of selectedFiles; let i = index" class="selected-file-item">
+          <div class="file-preview">
+            <img *ngIf="fileUploadService.isImageFile(file)" 
+                 [src]="filePreviews.get(file.name)" 
+                 class="file-preview-image"
+                 (error)="handlePreviewError($event)">
+            <i *ngIf="!fileUploadService.isImageFile(file)" 
+               [class]="getFileIcon(file.name)" 
+               class="file-preview-icon"></i>
+          </div>
+          <div class="file-info">
+            <span class="file-name">{{ file.name }}</span>
+            <span class="file-size">{{ fileUploadService.formatFileSize(file.size) }}</span>
+          </div>
+          <button class="btn-remove-file" (click)="removeSelectedFile(i)">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- Typing Indicator -->
       <div *ngIf="isTyping" class="typing-indicator">
         <div class="typing-content">
@@ -187,9 +380,17 @@ import { Subscription, debounceTime } from 'rxjs';
       <!-- Message Input -->
       <div class="message-input-container">
         <div class="input-actions">
-          <button class="btn-icon">
-            <i class="bi bi-plus-lg"></i>
-          </button>
+          <!-- File Upload Button -->
+          <div class="file-upload-wrapper">
+            <input type="file" #fileInput multiple 
+                   (change)="onFileSelected($event)"
+                   [accept]="allowedFileTypes"
+                   style="display: none">
+            <button class="btn-icon" (click)="fileInput.click()" title="Attach files">
+              <i class="bi bi-paperclip"></i>
+            </button>
+          </div>
+          
           <button class="btn-icon">
             <i class="bi bi-emoji-smile"></i>
           </button>
@@ -207,15 +408,12 @@ import { Subscription, debounceTime } from 'rxjs';
             (focus)="onInputFocus()"
             [disabled]="!currentChat || sendingMessage"
           ></textarea>
-          <button class="btn-icon btn-emoji">
-            <i class="bi bi-emoji-smile"></i>
-          </button>
         </div>
 
         <button 
           class="btn-send" 
           (click)="sendMessage()"
-          [disabled]="!newMessage.trim() || !currentChat || sendingMessage"
+          [disabled]="(!newMessage.trim() && selectedFiles.length === 0) || !currentChat || sendingMessage"
           [class.sending]="sendingMessage"
         >
           <i class="bi bi-send"></i>
@@ -244,6 +442,35 @@ import { Subscription, debounceTime } from 'rxjs';
       </div>
       <div class="info-panel-content">
         <!-- Chat info content here -->
+      </div>
+    </div>
+
+    <!-- File Viewer Modal -->
+    <div *ngIf="viewingAttachment" class="file-viewer-modal" (click)="closeAttachmentViewer()">
+      <div class="file-viewer-content" (click)="$event.stopPropagation()">
+        <button class="btn-close-viewer" (click)="closeAttachmentViewer()">
+          <i class="bi bi-x"></i>
+        </button>
+        
+        <div *ngIf="viewingAttachment.fileType === 'image'" class="image-viewer">
+          <img [src]="getAttachmentUrl(viewingAttachment)" 
+               [alt]="viewingAttachment.fileName"
+               class="viewer-image">
+        </div>
+        
+        <div *ngIf="viewingAttachment.fileType === 'video'" class="video-viewer">
+          <video controls autoplay class="viewer-video">
+            <source [src]="getAttachmentUrl(viewingAttachment)" [type]="getVideoMimeType(viewingAttachment.fileName)">
+          </video>
+        </div>
+        
+        <div class="viewer-actions">
+          <button class="btn-download-viewer" (click)="downloadAttachment(viewingAttachment)">
+            <i class="bi bi-download"></i>
+            Download
+          </button>
+          <span class="viewer-filename">{{ viewingAttachment.fileName }}</span>
+        </div>
       </div>
     </div>
   `,
@@ -650,6 +877,305 @@ import { Subscription, debounceTime } from 'rxjs';
       margin-bottom: 12px;
     }
 
+    /* File Upload Progress */
+    .upload-progress-container {
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .upload-progress-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .upload-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .upload-filename {
+      font-size: 0.85rem;
+      color: #495057;
+    }
+
+    .upload-progress {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 2;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 6px;
+      background: #e9ecef;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #007bff;
+      transition: width 0.3s ease;
+    }
+
+    .upload-percentage {
+      font-size: 0.75rem;
+      color: #6c757d;
+      min-width: 40px;
+    }
+
+    .btn-retry, .btn-cancel {
+      background: none;
+      border: none;
+      padding: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #6c757d;
+    }
+
+    .btn-retry:hover {
+      color: #007bff;
+    }
+
+    .btn-cancel:hover {
+      color: #dc3545;
+    }
+
+    /* Selected Files Preview */
+    .selected-files-preview {
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .selected-file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .file-preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8f9fa;
+      flex-shrink: 0;
+    }
+
+    .file-preview-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .file-preview-icon {
+      font-size: 1.2rem;
+      color: #6c757d;
+    }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      display: block;
+      font-size: 0.8rem;
+      color: #495057;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 0.7rem;
+      color: #6c757d;
+    }
+
+    .btn-remove-file {
+      background: none;
+      border: none;
+      padding: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #6c757d;
+      flex-shrink: 0;
+    }
+
+    .btn-remove-file:hover {
+      color: #dc3545;
+    }
+
+    /* Message Attachments */
+    .message-attachments {
+      margin-bottom: 8px;
+    }
+
+    .attachment-item {
+      margin-bottom: 8px;
+    }
+
+    .attachment-item:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Image Attachment */
+    .image-attachment {
+      position: relative;
+      max-width: 300px;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .attachment-image {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .image-attachment:hover .attachment-image {
+      transform: scale(1.02);
+    }
+
+    .attachment-overlay {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .image-attachment:hover .attachment-overlay {
+      opacity: 1;
+    }
+
+    .btn-download {
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      color: white;
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Video Attachment */
+    .video-attachment {
+      max-width: 300px;
+    }
+
+    .attachment-video {
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    .video-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 0 0 8px 8px;
+    }
+
+    .video-name {
+      font-size: 0.8rem;
+      color: #495057;
+    }
+
+    /* Audio Attachment */
+    .audio-attachment {
+      max-width: 250px;
+    }
+
+    .audio-player {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .attachment-audio {
+      flex: 1;
+    }
+
+    .audio-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .audio-name {
+      font-size: 0.8rem;
+      color: #495057;
+    }
+
+    .audio-size {
+      font-size: 0.7rem;
+      color: #6c757d;
+    }
+
+    /* Document Attachment */
+    .document-attachment, .file-attachment {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      max-width: 300px;
+    }
+
+    .document-icon, .file-icon {
+      font-size: 1.5rem;
+      color: #495057;
+      flex-shrink: 0;
+    }
+
+    .document-info, .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .document-name, .file-name {
+      display: block;
+      font-size: 0.85rem;
+      color: #495057;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .document-size, .file-size {
+      font-size: 0.75rem;
+      color: #6c757d;
+    }
+
     .typing-indicator {
       padding: 12px 24px;
       background: #f8f9fa;
@@ -722,7 +1248,7 @@ import { Subscription, debounceTime } from 'rxjs';
       width: 100%;
       border: none;
       background: transparent;
-      padding: 12px 48px 12px 16px;
+      padding: 12px 16px;
       resize: none;
       font-family: inherit;
       font-size: 0.9rem;
@@ -739,13 +1265,6 @@ import { Subscription, debounceTime } from 'rxjs';
     .message-input:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-    }
-
-    .btn-emoji {
-      position: absolute;
-      right: 8px;
-      bottom: 8px;
-      padding: 4px;
     }
 
     .btn-send {
@@ -853,6 +1372,91 @@ import { Subscription, debounceTime } from 'rxjs';
       background: #f5f5f5;
     }
 
+    /* File Viewer Modal */
+    .file-viewer-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .file-viewer-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .btn-close-viewer {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.7);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .image-viewer, .video-viewer {
+      max-width: 100%;
+      max-height: calc(90vh - 80px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .viewer-image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .viewer-video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .viewer-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: #f8f9fa;
+      border-top: 1px solid #e9ecef;
+    }
+
+    .btn-download-viewer {
+      background: #007bff;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .viewer-filename {
+      font-size: 0.9rem;
+      color: #495057;
+    }
+
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
@@ -888,6 +1492,10 @@ import { Subscription, debounceTime } from 'rxjs';
       .chat-info-panel {
         width: 100%;
       }
+
+      .image-attachment, .video-attachment {
+        max-width: 250px;
+      }
     }
 
     @media (max-width: 480px) {
@@ -900,6 +1508,10 @@ import { Subscription, debounceTime } from 'rxjs';
         padding: 10px 14px;
         font-size: 0.9rem;
       }
+
+      .image-attachment, .video-attachment {
+        max-width: 200px;
+      }
     }
   `]
 })
@@ -910,6 +1522,7 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   
   @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
   @ViewChild('messageInput') private messageInput!: ElementRef;
+  @ViewChild('fileInput') private fileInput!: ElementRef;
 
   messages: Message[] = [];
   newMessage = '';
@@ -922,6 +1535,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
   hasMoreMessages = true;
   currentPage = 1;
   pageSize = 50;
+
+  // File upload properties
+  selectedFiles: File[] = [];
+  filePreviews = new Map<string, string>();
+  activeUploads = new Map<string, FileUploadProgress>();
+  viewingAttachment: MessageAttachment | null = null;
+  allowedFileTypes = '.jpg,.jpeg,.png,.gif,.webp,.mp4,.avi,.mov,.wmv,.mp3,.wav,.ogg,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar';
 
   private typingTimeout: any;
   private typingDebounceTimeout: any;
@@ -936,11 +1556,13 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     private chatService: ChatService,
     private signalrChatService: SignalrChatService,
     private authService: AuthService,
-    private apiService: ApiService
+    private apiService: ApiService,
+    public fileUploadService: FileUploadService
   ) {}
 
   ngOnInit() {
     this.setupRealTimeListeners();
+    this.setupFileUploadListeners();
   }
 
   ngOnDestroy() {
@@ -948,6 +1570,9 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.clearTimeouts();
     this.pendingMessageIds.clear();
     this.processedMessageIds.clear();
+    this.selectedFiles = [];
+    this.filePreviews.clear();
+    this.activeUploads.clear();
   }
 
   ngAfterViewChecked() {
@@ -971,6 +1596,8 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.hasMoreMessages = true;
     this.newMessage = '';
     this.isTyping = false;
+    this.selectedFiles = [];
+    this.filePreviews.clear();
     this.pendingMessageIds.clear();
     this.processedMessageIds.clear();
   }
@@ -1060,64 +1687,333 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
     );
   }
 
+  private setupFileUploadListeners(): void {
+    this.subscriptions.add(
+      this.fileUploadService.uploadProgress$.subscribe(progressMap => {
+        this.activeUploads = progressMap;
+      })
+    );
+
+    this.subscriptions.add(
+      this.fileUploadService.uploadComplete$.subscribe(({ uploadId, response }) => {
+        if (response.success) {
+          console.log('File upload completed:', response);
+        }
+      })
+    );
+  }
+
   joinChatRoom(): void {
     if (this.currentChat) {
       this.signalrChatService.joinChat(this.currentChat.id);
     }
   }
 
-  sendMessage(): void {
-    if (!this.newMessage.trim() || !this.currentChat || this.sendingMessage) return;
+  // File Upload Methods
+  onFileSelected(event: any): void {
+    const files: FileList = event.target.files;
+    if (files.length === 0) return;
 
-    this.sendingMessage = true;
-    const messageContent = this.newMessage.trim();
-
-    const messageData = {
-      chatId: this.currentChat.id,
-      content: messageContent,
-      messageType: 'text'
-    };
-
-    // Create temporary message with current Indian time
-    const tempMessage: Message = {
-      id: this.generateTempId(),
-      chatId: this.currentChat.id,
-      senderId: this.authService.getCurrentUserId(),
-      content: messageContent,
-      messageType: 'text',
-      createdAt: new Date().toISOString(), // This will be in UTC
-      isRead: false,
-      replyTo: undefined
-    };
-
-    this.addMessageToChat(tempMessage);
-    this.pendingMessageIds.add(tempMessage.id);
-
-    this.chatService.sendMessage(messageData).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          const realMessage = response.data;
-          
-          this.removeMessageById(tempMessage.id);
-          this.pendingMessageIds.delete(tempMessage.id);
-          
-          this.addMessageToChat(realMessage);
-          
-          this.newMessage = '';
-          this.shouldScrollToBottom = true;
-          this.adjustTextareaHeight();
-        }
-        this.sendingMessage = false;
-      },
-      error: (error) => {
-        console.error('Error sending message:', error);
-        this.removeMessageById(tempMessage.id);
-        this.pendingMessageIds.delete(tempMessage.id);
-        this.sendingMessage = false;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const validation = this.fileUploadService.validateFile(file);
+      
+      if (validation.valid) {
+        this.selectedFiles.push(file);
+        this.generateFilePreview(file);
+      } else {
+        this.showFileError(validation.error!, file.name);
       }
-    });
+    }
+
+    // Reset file input
+    this.fileInput.nativeElement.value = '';
   }
 
+  private async generateFilePreview(file: File): Promise<void> {
+    if (this.fileUploadService.isImageFile(file)) {
+      try {
+        const previewUrl = await this.fileUploadService.generatePreviewUrl(file);
+        this.filePreviews.set(file.name, previewUrl);
+      } catch (error) {
+        console.error('Error generating preview:', error);
+      }
+    }
+  }
+
+  removeSelectedFile(index: number): void {
+    const file = this.selectedFiles[index];
+    this.filePreviews.delete(file.name);
+    this.selectedFiles.splice(index, 1);
+  }
+
+  // Updated sendMessage to handle files
+  // chat-window.component.ts - UPDATED sendMessage method
+sendMessage(): void {
+  if ((!this.newMessage.trim() && this.selectedFiles.length === 0) || !this.currentChat || this.sendingMessage) return;
+
+  this.sendingMessage = true;
+
+  const messageData: CreateMessage = {
+    chatId: this.currentChat.id,
+    content: this.newMessage.trim(),
+    messageType: this.selectedFiles.length > 0 ? 'file' : 'text',
+    files: this.selectedFiles.length > 0 ? this.selectedFiles : undefined
+  };
+
+  // Create temporary message for immediate UI feedback
+  const tempMessage: Message = {
+    id: this.generateTempId(),
+    chatId: this.currentChat.id,
+    senderId: this.authService.getCurrentUserId(),
+    content: this.newMessage.trim() || this.generateFileMessage(this.selectedFiles),
+    messageType: this.selectedFiles.length > 0 ? 'file' : 'text',
+    createdAt: new Date().toISOString(),
+    isRead: false,
+    attachments: this.selectedFiles.length > 0 ? this.generateTempAttachments(this.selectedFiles) : []
+  };
+
+  this.addMessageToChat(tempMessage);
+  this.pendingMessageIds.add(tempMessage.id);
+
+  this.chatService.sendMessage(messageData).subscribe({
+    next: (response) => {
+      if (response.success && response.data) {
+        const realMessage = response.data;
+        
+        // Replace temporary message with real one
+        this.removeMessageById(tempMessage.id);
+        this.pendingMessageIds.delete(tempMessage.id);
+        this.addMessageToChat(realMessage);
+        
+        // Clear input and reset state
+        this.newMessage = '';
+        this.selectedFiles = [];
+        this.filePreviews.clear();
+        this.shouldScrollToBottom = true;
+        this.adjustTextareaHeight();
+      }
+      this.sendingMessage = false;
+    },
+    error: (error) => {
+      console.error('Error sending message:', error);
+      this.removeMessageById(tempMessage.id);
+      this.pendingMessageIds.delete(tempMessage.id);
+      this.sendingMessage = false;
+      
+      // Show error to user
+      alert('Failed to send message. Please try again.');
+    }
+  });
+}
+
+  private generateFileMessage(files: File[]): string {
+    if (files.length === 1) {
+      return `[${this.fileUploadService.getFileType(files[0]).toUpperCase()} file]`;
+    } else {
+      return `[${files.length} files]`;
+    }
+  }
+
+  private generateTempAttachments(files: File[]): MessageAttachment[] {
+    return files.map(file => ({
+      id: this.generateTempId(),
+      fileName: file.name,
+      fileUrl: '',
+      fileType: this.fileUploadService.getFileType(file),
+      fileSize: file.size,
+      thumbnailUrl: this.filePreviews.get(file.name) || ''
+    }));
+  }
+
+  // File attachment methods
+  getAttachmentUrl(attachment: MessageAttachment): string {
+    return this.apiService.getImageUrl(attachment.fileUrl);
+  }
+
+  openAttachmentViewer(attachment: MessageAttachment): void {
+    if (attachment.fileType === 'image' || attachment.fileType === 'video') {
+      this.viewingAttachment = attachment;
+    }
+  }
+
+  closeAttachmentViewer(): void {
+    this.viewingAttachment = null;
+  }
+
+ downloadAttachment(attachment: MessageAttachment): void {
+    const fileUrl = this.getAttachmentUrl(attachment);
+    
+    // Create a temporary anchor element
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = attachment.fileName; // This forces download
+    link.target = '_blank'; // Still open in new tab but as download
+    
+    // For direct download, we need to make a fetch request and create blob
+    this.forceDownload(attachment);
+}
+
+// NEW METHOD: Force file download
+forceDownload(attachment: MessageAttachment): void {
+    const fileUrl = this.getAttachmentUrl(attachment);
+    
+    fetch(fileUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            // Create blob URL
+            const blobUrl = window.URL.createObjectURL(blob);
+            
+            // Create temporary link
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = attachment.fileName;
+            
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up blob URL
+            window.URL.revokeObjectURL(blobUrl);
+        })
+        .catch(error => {
+            console.error('Download error:', error);
+            // Fallback: open in new tab
+            window.open(fileUrl, '_blank');
+        });
+}
+
+// Alternative simpler method for direct download
+downloadAttachmentDirect(attachment: MessageAttachment): void {
+    const fileUrl = this.getAttachmentUrl(attachment);
+    
+    // Create temporary link with download attribute
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = attachment.fileName;
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+  handleAttachmentError(event: any): void {
+    console.error('Error loading attachment');
+    event.target.style.display = 'none';
+  }
+
+  handlePreviewError(event: any): void {
+    event.target.style.display = 'none';
+  }
+
+  formatFileSize(bytes: number): string {
+    return this.fileUploadService.formatFileSize(bytes);
+  }
+
+  getFileIcon(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'pdf':
+        return 'bi bi-file-earmark-pdf text-danger';
+      case 'doc':
+      case 'docx':
+        return 'bi bi-file-earmark-word text-primary';
+      case 'xls':
+      case 'xlsx':
+        return 'bi bi-file-earmark-excel text-success';
+      case 'ppt':
+      case 'pptx':
+        return 'bi bi-file-earmark-ppt text-warning';
+      case 'zip':
+      case 'rar':
+        return 'bi bi-file-earmark-zip text-secondary';
+      case 'mp3':
+      case 'wav':
+      case 'ogg':
+        return 'bi bi-file-earmark-music text-info';
+      case 'mp4':
+      case 'avi':
+      case 'mov':
+        return 'bi bi-file-earmark-play text-primary';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return 'bi bi-file-earmark-image text-success';
+      default:
+        return 'bi bi-file-earmark text-secondary';
+    }
+  }
+
+  getDocumentIcon(fileType: string): string {
+    switch (fileType) {
+      case 'pdf':
+        return 'bi bi-file-earmark-pdf text-danger';
+      case 'word':
+        return 'bi bi-file-earmark-word text-primary';
+      case 'excel':
+        return 'bi bi-file-earmark-excel text-success';
+      case 'powerpoint':
+        return 'bi bi-file-earmark-ppt text-warning';
+      default:
+        return 'bi bi-file-earmark text-secondary';
+    }
+  }
+
+  isDocumentType(fileType: string): boolean {
+    return ['pdf', 'word', 'excel', 'powerpoint', 'document'].includes(fileType);
+  }
+
+  isOtherFileType(fileType: string): boolean {
+    return !['image', 'video', 'audio', 'pdf', 'word', 'excel', 'powerpoint', 'document'].includes(fileType);
+  }
+
+  getVideoMimeType(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'mp4': return 'video/mp4';
+      case 'avi': return 'video/x-msvideo';
+      case 'mov': return 'video/quicktime';
+      case 'wmv': return 'video/x-ms-wmv';
+      default: return 'video/mp4';
+    }
+  }
+
+  getAudioMimeType(filename: string): string {
+    const ext = filename.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'mp3': return 'audio/mpeg';
+      case 'wav': return 'audio/wav';
+      case 'ogg': return 'audio/ogg';
+      default: return 'audio/mpeg';
+    }
+  }
+
+  getActiveUploads(): FileUploadProgress[] {
+    return Array.from(this.activeUploads.values());
+  }
+
+  retryUpload(uploadId: string): void {
+    console.log('Retry upload:', uploadId);
+    // Implement retry logic if needed
+  }
+
+  cancelUpload(uploadId: string): void {
+    this.fileUploadService.clearProgress(uploadId);
+  }
+
+  private showFileError(error: string, filename: string): void {
+    alert(`Error with file ${filename}: ${error}`);
+  }
+
+  // All your existing methods remain unchanged below...
   private addMessageToChat(message: Message): void {
     if (this.processedMessageIds.has(message.id)) {
       return;
@@ -1345,7 +2241,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, AfterViewChecked 
       return '';
     }
     
-    // Use Indian timezone (Asia/Kolkata) for consistent time display
     return date.toLocaleTimeString('en-IN', { 
       hour: '2-digit', 
       minute: '2-digit',

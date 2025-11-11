@@ -252,7 +252,7 @@ export interface Message {
   senderName?: string;
   senderProfilePicture?: string;
   content: string;
-  messageType: 'text' | 'image' | 'file' | 'system';
+   messageType: 'text' | 'image' | 'file' | 'system' | 'video' | 'audio'; // UPDATED
   isRead: boolean;
   createdAt: string;
   readAt?: string;
@@ -262,6 +262,11 @@ export interface Message {
   editedAt?: string;
   replyToMessage?: Message;
   attachments?: MessageAttachment[];
+    filePath?: string;
+  fileName?: string;
+  fileSize?: string;
+  fileType?: string;
+  thumbnailPath?: string;
 }
 
 export interface MessageAttachment {
@@ -271,6 +276,10 @@ export interface MessageAttachment {
   fileType: string;
   fileSize: number;
   thumbnailUrl?: string;
+   mimeType?: string; // NEW
+  duration?: number; // NEW for audio/video
+  width?: number; // NEW for images/videos
+  height?: number;
 }
 
 export interface MessageReaction {
@@ -299,7 +308,29 @@ export interface CreateMessage {
   content: string;
   messageType: string;
   replyTo?: number;
-  attachments?: File[];
+   attachments?: File[]; // NEW: For file uploads
+  files?: File[]; 
+}
+
+export interface FileUploadProgress {
+  fileName: string;
+  bytesUploaded: number;
+  totalBytes: number;
+  percentage: number;
+  uploadId: string;
+  status: 'uploading' | 'completed' | 'error';
+  error?: string;
+}
+
+// NEW: File upload response
+export interface FileUploadResponse {
+  success: boolean;
+  message: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
+  fileSize?: number;
+  thumbnailUrl?: string;
 }
 
 export interface CreateChat {

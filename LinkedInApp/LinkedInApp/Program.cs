@@ -73,6 +73,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISavedPostRepository, SavedPostRepository>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<IFileService, FileService>();
 
 builder.Services.AddLogging();
 
@@ -140,7 +141,28 @@ app.UseRouting();
 app.UseCors("AllowSpecificOrigins");
 
 // Serve static files
-app.UseStaticFiles();
+// In Program.cs, add this before app.UseAuthorization();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ServeUnknownFileTypes = true, // Serve all file types
+    DefaultContentType = "application/octet-stream", // Default to download
+    OnPrepareResponse = ctx =>
+    {
+        // Set download headers for specific file types
+        var path = ctx.Context.Request.Path.Value ?? "";
+        if (path.Contains("/uploads/"))
+        {
+            // Force download for certain file types
+            var fileExtension = Path.GetExtension(path).ToLowerInvariant();
+            var forceDownloadTypes = new[] { ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".zip", ".rar" };
+
+            if (forceDownloadTypes.Contains(fileExtension))
+            {
+                ctx.Context.Response.Headers.Add("Content-Disposition", "attachment");
+            }
+        }
+    }
+});
 
 
 app.UseAuthentication();

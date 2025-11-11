@@ -192,8 +192,21 @@ namespace LinkedInApp.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FileName")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("FilePath")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("FileSize")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FileType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
@@ -208,6 +221,10 @@ namespace LinkedInApp.Migrations
                     b.Property<int>("SenderId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ThumbnailPath")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ChatId");
@@ -215,6 +232,45 @@ namespace LinkedInApp.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("LinkedInApp.Models.MessageAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FileType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MessageId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbnailPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId");
+
+                    b.ToTable("MessageAttachments");
                 });
 
             modelBuilder.Entity("LinkedInApp.Models.Notification", b =>
@@ -700,6 +756,17 @@ namespace LinkedInApp.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("LinkedInApp.Models.MessageAttachment", b =>
+                {
+                    b.HasOne("LinkedInApp.Models.Message", "Message")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+                });
+
             modelBuilder.Entity("LinkedInApp.Models.Notification", b =>
                 {
                     b.HasOne("LinkedInApp.Models.User", "Sender")
@@ -808,6 +875,11 @@ namespace LinkedInApp.Migrations
             modelBuilder.Entity("LinkedInApp.Models.Comment", b =>
                 {
                     b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("LinkedInApp.Models.Message", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("LinkedInApp.Models.Post", b =>

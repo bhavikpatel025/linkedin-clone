@@ -314,7 +314,7 @@ namespace LinkedInApp.Hubs
                     var userId = ValidateJwtToken(accessToken);
                     if (userId.HasValue)
                     {
-                        _logger.LogDebug("✅ User ID {UserId} extracted from access_token", userId);
+                        _logger.LogDebug(" User ID {UserId} extracted from access_token", userId);
                         return userId.Value;
                     }
                 }
@@ -323,7 +323,7 @@ namespace LinkedInApp.Hubs
                 var userIdClaim = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (int.TryParse(userIdClaim, out var userIdFromClaims))
                 {
-                    _logger.LogDebug("✅ User ID {UserId} extracted from claims", userIdFromClaims);
+                    _logger.LogDebug(" User ID {UserId} extracted from claims", userIdFromClaims);
                     return userIdFromClaims;
                 }
 
@@ -335,7 +335,7 @@ namespace LinkedInApp.Hubs
                     var userIdFromHeader = ValidateJwtToken(token);
                     if (userIdFromHeader.HasValue)
                     {
-                        _logger.LogDebug("✅ User ID {UserId} extracted from Authorization header", userIdFromHeader);
+                        _logger.LogDebug(" User ID {UserId} extracted from Authorization header", userIdFromHeader);
                         return userIdFromHeader;
                     }
                 }
@@ -411,6 +411,55 @@ namespace LinkedInApp.Hubs
             {
                 _logger.LogError(ex, "JWT token validation failed");
                 return null;
+            }
+        }
+
+        public async Task FileUploadProgress(string uploadId, long bytesUploaded, long totalBytes, string fileName)
+        {
+            try
+            {
+                var userId = await GetUserIdFromContextAsync();
+                if (!userId.HasValue) return;
+
+                await Clients.Caller.SendAsync("FileUploadProgress", new FileUploadProgressDto
+                {
+                    UploadId = uploadId,
+                    BytesUploaded = bytesUploaded,
+                    TotalBytes = totalBytes,
+                    FileName = fileName
+                });
+
+                _logger.LogDebug("File upload progress: {FileName} - {Percentage}%",
+                    fileName, (bytesUploaded * 100.0 / totalBytes).ToString("0.0"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in FileUploadProgress");
+            }
+        }
+
+        // NEW: File upload completed
+        public async Task FileUploadCompleted(string uploadId, string fileName, string fileUrl, string fileType)
+        {
+            try
+            {
+                var userId = await GetUserIdFromContextAsync();
+                if (!userId.HasValue) return;
+
+                await Clients.Caller.SendAsync("FileUploadCompleted", new
+                {
+                    UploadId = uploadId,
+                    FileName = fileName,
+                    FileUrl = fileUrl,
+                    FileType = fileType,
+                    Success = true
+                });
+
+                _logger.LogInformation("File upload completed: {FileName}", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in FileUploadCompleted");
             }
         }
 

@@ -49,6 +49,12 @@ export class SignalrChatService {
   private messageDeleted = new Subject<{chatId: number, messageId: number}>();
   public messageDeleted$ = this.messageDeleted.asObservable();
 
+   private fileUploadProgress = new Subject<any>();
+  public fileUploadProgress$ = this.fileUploadProgress.asObservable();
+
+  private fileUploadCompleted = new Subject<any>();
+  public fileUploadCompleted$ = this.fileUploadCompleted.asObservable();
+
   // Connection state
   private connectionState = new BehaviorSubject<ConnectionState>({
     isConnected: false,
@@ -262,6 +268,14 @@ private async testConnection(): Promise<void> {
         isReconnecting: true,
         connectionId: null
       });
+    });
+
+    this.hubConnection.on('FileUploadProgress', (data: any) => {
+      this.fileUploadProgress.next(data);
+    });
+
+    this.hubConnection.on('FileUploadCompleted', (data: any) => {
+      this.fileUploadCompleted.next(data);
     });
 
     this.hubConnection.onreconnected((connectionId) => {
@@ -537,4 +551,27 @@ private async testConnection(): Promise<void> {
       this.isIntentionalDisconnect = false;
     }
   }
+
+   public reportFileUploadProgress(uploadId: string, bytesUploaded: number, totalBytes: number, fileName: string): Promise<boolean> {
+    if (!this.isConnected()) return Promise.resolve(false);
+    
+    return this.hubConnection.invoke('FileUploadProgress', uploadId, bytesUploaded, totalBytes, fileName)
+      .then(() => true)
+      .catch(error => {
+        console.error('Error reporting file upload progress:', error);
+        return false;
+      });
+  }
+
+  public reportFileUploadCompleted(uploadId: string, fileName: string, fileUrl: string, fileType: string): Promise<boolean> {
+    if (!this.isConnected()) return Promise.resolve(false);
+    
+    return this.hubConnection.invoke('FileUploadCompleted', uploadId, fileName, fileUrl, fileType)
+      .then(() => true)
+      .catch(error => {
+        console.error('Error reporting file upload completed:', error);
+        return false;
+      });
+  }
+
 }

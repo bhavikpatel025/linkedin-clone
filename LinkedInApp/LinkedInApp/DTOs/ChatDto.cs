@@ -1,4 +1,6 @@
-﻿namespace LinkedInApp.DTOs
+﻿using System.Text.Json.Serialization;
+
+namespace LinkedInApp.DTOs
 {
     public class ChatDto
     {
@@ -40,6 +42,11 @@
         public string Content { get; set; } = string.Empty;
         public string MessageType { get; set; } = "text"; // text, image, file, etc.
         public bool IsRead { get; set; }
+        public string? FilePath { get; set; }
+        public string? FileName { get; set; } // NEW
+        public string? FileSize { get; set; } // NEW
+        public string? FileType { get; set; } // NEW
+        public string? ThumbnailPath { get; set; } // NEW
         public DateTime CreatedAt { get; set; }
         public DateTime? ReadAt { get; set; }
         public int? ReplyToMessageId { get; set; } // NEW: Reply functionality
@@ -66,7 +73,32 @@
         public string Content { get; set; } = string.Empty;
         public string MessageType { get; set; } = "text";
         public int? ReplyToMessageId { get; set; } // NEW: Reply to specific message
-        public List<MessageAttachmentDto> Attachments { get; set; } = new List<MessageAttachmentDto>(); // NEW: File attachments
+
+        [JsonIgnore]
+        public List<IFormFile>? Files { get; set; }
+
+        [JsonPropertyName("files")]
+        public List<MessageAttachmentDto>? Attachments { get; set; } = new List<MessageAttachmentDto>();
+    }
+    public class FileUploadResponseDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string? FileUrl { get; set; }
+        public string? FileName { get; set; }
+        public string? FileType { get; set; }
+        public long FileSize { get; set; }
+        public string? ThumbnailUrl { get; set; }
+    }
+
+    // NEW: For file upload progress
+    public class FileUploadProgressDto
+    {
+        public string FileName { get; set; } = string.Empty;
+        public long BytesUploaded { get; set; }
+        public long TotalBytes { get; set; }
+        public double Percentage => TotalBytes > 0 ? (BytesUploaded * 100.0) / TotalBytes : 0;
+        public string UploadId { get; set; } = string.Empty;
     }
 
     public class CreateChatDto

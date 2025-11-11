@@ -23,10 +23,20 @@ namespace LinkedInApp.Data
         public DbSet<Chat> Chats { get; set; }
         public DbSet<ChatParticipant> ChatParticipants { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<MessageAttachment> MessageAttachments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<MessageAttachment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(ma => ma.Message)
+                      .WithMany(m => m.Attachments)
+                      .HasForeignKey(ma => ma.MessageId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
             modelBuilder.Entity<User>(entity =>
             {
@@ -254,6 +264,12 @@ namespace LinkedInApp.Data
                 entity.HasOne(m => m.Sender)
                       .WithMany()
                       .HasForeignKey(m => m.SenderId);
+
+                entity.Property(m => m.FileName).HasMaxLength(500);
+                entity.Property(m => m.FilePath).HasMaxLength(1000);
+                entity.Property(m => m.FileType).HasMaxLength(100);
+                entity.Property(m => m.FileSize).HasMaxLength(50);
+                entity.Property(m => m.ThumbnailPath).HasMaxLength(1000);
             });
 
             // Seed data
