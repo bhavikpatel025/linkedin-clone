@@ -8,19 +8,27 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 
 // Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 // AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-
 
 // SignalR
 builder.Services.AddSignalR();
@@ -84,7 +92,7 @@ builder.Services.AddCors(options =>
     {
         builder.WithOrigins(
                 "http://localhost:4200",  // Angular development server
-                "https://localhost:4200"               
+                "https://localhost:4200"
             )
             .AllowAnyMethod()
             .AllowAnyHeader()
@@ -92,14 +100,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "LinkedInApp API", Version = "v1" });
 
-    //  JWT Authentication to Swagger
+    // JWT Authentication to Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -123,6 +130,10 @@ builder.Services.AddSwaggerGen(options =>
             new string[] {}
         }
     });
+
+    // Add this to ignore problematic operations
+    options.IgnoreObsoleteActions();
+    options.IgnoreObsoleteProperties();
 });
 
 var app = builder.Build();
@@ -141,7 +152,6 @@ app.UseRouting();
 app.UseCors("AllowSpecificOrigins");
 
 // Serve static files
-// In Program.cs, add this before app.UseAuthorization();
 app.UseStaticFiles(new StaticFileOptions
 {
     ServeUnknownFileTypes = true, // Serve all file types
@@ -158,12 +168,11 @@ app.UseStaticFiles(new StaticFileOptions
 
             if (forceDownloadTypes.Contains(fileExtension))
             {
-                ctx.Context.Response.Headers.Add("Content-Disposition", "attachment");
+                ctx.Context.Response.Headers["Content-Disposition"] = "attachment";
             }
         }
     }
 });
-
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -184,8 +193,15 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while creating the database.");
+        try
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "An error occurred while creating the database.");
+        }
+        catch
+        {
+            Console.Error.WriteLine($"An error occurred while creating the database: {ex.Message}");
+        }
     }
 }
 

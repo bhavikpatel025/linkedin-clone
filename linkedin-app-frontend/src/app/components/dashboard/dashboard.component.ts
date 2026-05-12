@@ -437,10 +437,7 @@ declare var $: any;
 
                                   <!-- VIEW REPLIES BUTTON -->
                                   <button
-                                    *ngIf="
-                                      comment.replies &&
-                                      comment.replies.length > 0
-                                    "
+                                    *ngIf="getReplyCount(comment) > 0"
                                     class="btn btn-link btn-sm text-muted p-0"
                                     (click)="toggleReplies(comment)"
                                   >
@@ -448,9 +445,9 @@ declare var $: any;
                                       {{
                                         comment.showReplies ? 'Hide' : 'View'
                                       }}
-                                      {{ comment.replies.length }}
+                                      {{ getReplyCount(comment) }}
                                       {{
-                                        comment.replies.length === 1
+                                        getReplyCount(comment) === 1
                                           ? 'reply'
                                           : 'replies'
                                       }}
@@ -1342,8 +1339,7 @@ export class DashboardComponent implements OnInit {
               comment.showReplies = false; // Initialize
               comment.showReplyForm = false; // Initialize
               comment.replies = comment.replies || []; // Initialize replies array
-
-              this.loadReplies(comment);
+              comment.repliesLoaded = false;
             });
 
             if (this.shouldShowMoreButton(post.description)) {
@@ -1733,7 +1729,7 @@ export class DashboardComponent implements OnInit {
   toggleReplies(comment: Comment): void {
     if (!comment.showReplies) {
       // Load replies if not already loaded
-      if (!comment.replies || comment.replies.length === 0) {
+      if (!comment.repliesLoaded) {
         this.loadReplies(comment);
       }
     }
@@ -1749,12 +1745,20 @@ export class DashboardComponent implements OnInit {
             ...reply,
             canDelete: this.canDeleteReply(reply),
           }));
+          comment.repliesCount = comment.replies.length;
+          comment.repliesLoaded = true;
         }
       },
       error: (error) => {
-        console.error('Error loading replies:', error);
+          console.error('Error loading replies:', error);
       },
     });
+  }
+
+  getReplyCount(comment: Comment): number {
+    return comment.repliesLoaded
+      ? (comment.replies?.length || 0)
+      : (comment.repliesCount || comment.replies?.length || 0);
   }
 
   // Toggle reply form
@@ -1792,6 +1796,8 @@ export class DashboardComponent implements OnInit {
               canDelete: this.canDeleteReply(response.data),
             };
             comment.replies.push(newReply);
+            comment.repliesLoaded = true;
+            comment.repliesCount = comment.replies.length;
 
             // Reset form and hide it
             form.reset();
@@ -1843,6 +1849,7 @@ export class DashboardComponent implements OnInit {
                 comment.replies = comment.replies.filter(
                   (r) => r.id !== reply.id
                 );
+                comment.repliesCount = comment.replies.length;
               }
 
               Swal.fire({

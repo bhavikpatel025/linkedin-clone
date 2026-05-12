@@ -16,10 +16,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: #f3f2ef;
   color: #000000e6;
+  line-height: 1.5;
 }
 
 html, body {
   height: 100%;
+}
+
+:root {
+  --li-blue: #0a66c2;
+  --li-blue-dark: #004182;
+  --li-blue-soft: #eaf4ff;
+  --li-bg: #f3f2ef;
+  --li-surface: #ffffff;
+  --li-surface-muted: #f8fafc;
+  --li-border: #d6d6d6;
+  --li-border-soft: #e8e8e8;
+  --li-text: #000000e6;
+  --li-muted: #666666;
+  --li-radius: 8px;
+  --li-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --li-shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 /* Scrollbar Styles */
@@ -33,12 +50,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #b8b8b8;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #868686;
 }
 
 /* Card Shadows */
@@ -56,21 +73,24 @@ html, body {
 
 /* Button Transitions */
 .btn {
-  transition: all 0.3s ease;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .btn:hover {
-  transform: translateY(-1px);
+  box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.04);
 }
 
 .btn:active {
-  transform: translateY(0);
+  box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.08);
 }
 
 /* Form Controls */
 .form-control:focus,
 .form-select:focus {
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  border-color: var(--li-blue);
+  box-shadow: 0 0 0 1px var(--li-blue);
 }
 
 /* Custom Utilities */
@@ -91,7 +111,15 @@ html, body {
 
 /* Card Hover Effects */
 .card {
-  transition: all 0.3s ease;
+  border: 1px solid var(--li-border-soft);
+  border-radius: var(--li-radius);
+  box-shadow: var(--li-shadow);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.card:hover {
+  border-color: #c9c9c9;
+  box-shadow: var(--li-shadow-hover);
 }
 
 /* Badges */
@@ -103,7 +131,7 @@ html, body {
 /* Links */
 a {
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: color 0.16s ease, opacity 0.16s ease;
 }
 
 a:hover {
@@ -152,26 +180,28 @@ a:hover {
 
 /* Custom Bootstrap Overrides */
 .btn-primary {
-  background-color: #0a66c2;
-  border-color: #0a66c2;
+  background-color: var(--li-blue);
+  border-color: var(--li-blue);
 }
 
 .btn-primary:hover {
-  background-color: #084d94;
-  border-color: #084d94;
+  background-color: var(--li-blue-dark);
+  border-color: var(--li-blue-dark);
 }
 
 .bg-primary {
-  background-color: #0a66c2 !important;
+  background-color: var(--li-blue) !important;
 }
 
 .text-primary {
-  color: #0a66c2 !important;
+  color: var(--li-blue) !important;
 }
 
 /* Navbar Fixes */
 .navbar {
   z-index: 1030;
+  border-bottom: 1px solid var(--li-border-soft);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 /* Dropdown Improvements */
@@ -208,4 +238,208 @@ img {
 .swal2-popup.swal2-toast {
   padding: 1rem !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* LinkedIn-style shared UI polish */
+.container,
+.container-fluid {
+  max-width: 1180px;
+}
+
+.main-content {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(243, 242, 239, 0) 220px),
+    var(--li-bg);
+}
+
+.form-control,
+.form-select {
+  border-color: var(--li-border);
+  border-radius: 8px;
+  color: var(--li-text);
+  min-height: 42px;
+}
+
+textarea.form-control {
+  min-height: 96px;
+}
+
+.form-control::placeholder {
+  color: #7a7a7a;
+}
+
+.dropdown-menu {
+  border: 1px solid var(--li-border-soft);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 6px;
+}
+
+.dropdown-item {
+  border-radius: 6px;
+  color: var(--li-text);
+  font-weight: 500;
+}
+
+.dropdown-item:active,
+.dropdown-item:hover {
+  background-color: var(--li-blue-soft);
+  color: var(--li-blue-dark);
+}
+
+.modal-content {
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
+}
+
+.alert {
+  border: 1px solid transparent;
+  box-shadow: var(--li-shadow);
+}
+
+.badge {
+  border-radius: 999px;
+}
+
+.post-card,
+.profile-card,
+.network-card,
+.notification-card,
+.saved-post-card,
+.create-post-card,
+.chat-container,
+.chat-layout,
+.auth-card {
+  border: 1px solid var(--li-border-soft) !important;
+  border-radius: var(--li-radius) !important;
+  background: var(--li-surface) !important;
+  box-shadow: var(--li-shadow) !important;
+}
+
+.post-card:hover,
+.network-card:hover,
+.notification-card:hover,
+.saved-post-card:hover,
+.chat-list-item:hover {
+  box-shadow: var(--li-shadow-hover) !important;
+}
+
+.chat-window-container,
+.chat-list-container {
+  background: var(--li-surface) !important;
+  border: 1px solid var(--li-border-soft) !important;
+  border-radius: var(--li-radius) !important;
+  overflow: hidden;
+}
+
+.chat-header,
+.message-input-container {
+  background: var(--li-surface) !important;
+  border-color: var(--li-border-soft) !important;
+}
+
+.messages-container {
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.9), rgba(243, 242, 239, 0.95)),
+    var(--li-bg) !important;
+}
+
+.message-bubble {
+  border-radius: 8px !important;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.sent-bubble {
+  background: var(--li-blue) !important;
+  color: #fff !important;
+}
+
+.received-bubble {
+  background: var(--li-surface) !important;
+  color: var(--li-text) !important;
+  border: 1px solid var(--li-border-soft);
+}
+
+.btn-icon,
+.btn-back,
+.btn-send,
+.btn-remove-file,
+.btn-download,
+.btn-cancel,
+.btn-retry {
+  align-items: center;
+  border-radius: 999px !important;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 36px;
+  min-width: 36px;
+}
+
+.btn-icon:hover,
+.btn-back:hover,
+.btn-remove-file:hover,
+.btn-download:hover,
+.btn-cancel:hover,
+.btn-retry:hover {
+  background-color: rgba(10, 102, 194, 0.1) !important;
+  color: var(--li-blue-dark) !important;
+}
+
+.selected-files-preview,
+.upload-progress-container,
+.typing-indicator {
+  border-top: 1px solid var(--li-border-soft);
+  background: var(--li-surface) !important;
+}
+
+.selected-file-item,
+.upload-progress-item,
+.document-attachment,
+.file-attachment,
+.audio-attachment,
+.video-info {
+  border: 1px solid var(--li-border-soft);
+  border-radius: 8px !important;
+  background: var(--li-surface-muted) !important;
+}
+
+.attachment-image,
+.attachment-video {
+  border-radius: 8px;
+  border: 1px solid var(--li-border-soft);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--li-blue);
+  outline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 56px;
+  }
+
+  .card,
+  .post-card,
+  .profile-card,
+  .network-card,
+  .notification-card,
+  .saved-post-card,
+  .create-post-card,
+  .chat-window-container,
+  .chat-list-container {
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .btn {
+    min-height: 40px;
+  }
 }

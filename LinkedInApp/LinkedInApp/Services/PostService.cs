@@ -220,11 +220,15 @@ namespace LinkedInApp.Services
             try
             {
                 var posts = await _context.Posts
+                    .AsNoTracking()
+                    .AsSplitQuery()
                     .Include(p => p.User)
                         .ThenInclude(u => u.Role)
                     .Include(p => p.Likes)
                     .Include(p => p.Comments)
                         .ThenInclude(c => c.User)
+                    .Include(p => p.Comments)
+                        .ThenInclude(c => c.Replies)
                          .Include(p => p.SavedPosts)
                     .OrderByDescending(p => p.CreatedDate)
                     .ToListAsync();
@@ -255,7 +259,8 @@ namespace LinkedInApp.Services
                             CreatedDate = c.CreatedDate,
                             UserId = c.UserId,
                             UserName = c.User?.Name ?? "Unknown User",
-                             UserProfilePicture = c.User?.ProfilePicture ?? string.Empty
+                            UserProfilePicture = c.User?.ProfilePicture ?? string.Empty,
+                            RepliesCount = c.Replies?.Count ?? 0
                         }).ToList() ?? new List<CommentDto>()
                     };
 
@@ -285,6 +290,8 @@ namespace LinkedInApp.Services
             try
             {
                 var post = await _context.Posts
+                    .AsNoTracking()
+                    .AsSplitQuery()
                     .Include(p => p.User)
                     .Include(p => p.Likes)
                     .Include(p => p.Comments)
@@ -877,11 +884,15 @@ namespace LinkedInApp.Services
             try
             {
                 var posts = await _context.Posts
+                    .AsNoTracking()
+                    .AsSplitQuery()
                     .Include(p => p.User)
                         .ThenInclude(u => u.Role)
                     .Include(p => p.Likes)
                     .Include(p => p.Comments)
                         .ThenInclude(c => c.User)
+                    .Include(p => p.Comments)
+                        .ThenInclude(c => c.Replies)
                     .Where(p => p.UserId == userId)
                     .OrderByDescending(p => p.CreatedDate)
                     .ToListAsync();
@@ -911,7 +922,8 @@ namespace LinkedInApp.Services
                             CreatedDate = c.CreatedDate,
                             UserId = c.UserId,
                             UserName = c.User?.Name ?? "Unknown User",
-                            UserProfilePicture = c.User?.ProfilePicture ?? string.Empty
+                            UserProfilePicture = c.User?.ProfilePicture ?? string.Empty,
+                            RepliesCount = c.Replies?.Count ?? 0
                         }).ToList() ?? new List<CommentDto>()
                     };
 

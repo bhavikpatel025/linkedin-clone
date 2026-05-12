@@ -1048,6 +1048,7 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
   private pendingCountSubscription!: Subscription;
   private notificationCountSubscription!: Subscription;
   private connectionStateSubscription!: Subscription; 
+  private chatCountSubscription?: Subscription;
   private refreshInterval: any;
   private searchSubscription?: Subscription; 
 
@@ -1078,8 +1079,8 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
         this.loadPendingCount();
         this.loadNotificationCount();
         this.subscribeToPendingCount();
-        this.subscribeToNotificationCount();      
-          this.subscribeToChatCount();
+        this.subscribeToNotificationCount();
+        this.subscribeToChatCount();
         this.startAutoRefresh();
       }
     });
@@ -1112,6 +1113,9 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
     }
     if (this.notificationCountSubscription) {
       this.notificationCountSubscription.unsubscribe();
+    }
+    if (this.chatCountSubscription) {
+      this.chatCountSubscription.unsubscribe();
     }
     if (this.routerSubscription) {
       this.routerSubscription.unsubscribe();
@@ -1151,21 +1155,17 @@ private readonly CACHE_DURATION = 30000; // 30 seconds cache
   }
 }
 
-loadChatCount(forceRefresh: boolean = false): void {
-  if (!this.currentUser) return;
+subscribeToChatCount(): void {
+  if (this.chatCountSubscription) {
+    return;
+  }
 
   this.loadingChatCount = true;
-  
-  // Listen to real-time chat count updates
-  this.signalrChatService.unreadCounts$.subscribe(counts => {
+  this.chatCountSubscription = this.signalrChatService.unreadCounts$.subscribe(() => {
     this.unreadChatCount = this.signalrChatService.getTotalUnreadCount();
     this.loadingChatCount = false;
     this.cdr.detectChanges();
   });
-}
-
-subscribeToChatCount(): void {
-  // You can add any additional chat count subscriptions here
 }
 
 
@@ -1495,6 +1495,10 @@ subscribeToChatCount(): void {
   }
 
   private subscribeToPendingCount() {
+    if (this.pendingCountSubscription) {
+      return;
+    }
+
     this.pendingCountSubscription =
       this.sharedStateService.pendingCount$.subscribe((count) => {
         this.pendingCount = count;
@@ -1503,6 +1507,10 @@ subscribeToChatCount(): void {
   }
 
   private subscribeToNotificationCount() {
+    if (this.notificationCountSubscription) {
+      return;
+    }
+
     this.notificationCountSubscription =
       this.sharedStateService.notificationCount$.subscribe((count) => {
         this.notificationCount = count;
@@ -1511,6 +1519,10 @@ subscribeToChatCount(): void {
   }
 
  private startAutoRefresh(): void {
+  if (this.refreshInterval) {
+    return;
+  }
+
   // Increase interval to 60 seconds instead of 15
   this.refreshInterval = setInterval(() => {
     if (this.currentUser) {

@@ -275,6 +275,7 @@ export class AppComponent implements OnInit, OnDestroy {
   globalToasts: any[] = [];
   private subscriptions = new Subscription();
    showFooter = false;
+  private realTimeListenersInitialized = false;
 
   constructor(
     private router: Router,
@@ -307,8 +308,6 @@ export class AppComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Initialize real-time notifications
-    this.initializeRealTimeNotifications();
   }
 
    private shouldShowFooter(url: string): boolean {
@@ -422,6 +421,11 @@ private showChatToast(message: any): void {
   }, 6000);
 }
  private initializeRealTimeNotifications(): void {
+  if (this.realTimeListenersInitialized) {
+    return;
+  }
+
+  this.realTimeListenersInitialized = true;
   console.log('🔔 Setting up global notification listeners');
 
   // Listen for real-time notifications

@@ -99,7 +99,8 @@ namespace LinkedInApp.Controllers
         }
 
         [HttpPost("upload-file")]
-        public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
         {
             try
             {
@@ -137,60 +138,77 @@ namespace LinkedInApp.Controllers
             }
         }
 
-        [HttpPost("upload-files")]
-        public async Task<IActionResult> UploadFiles([FromForm] List<IFormFile> files)
+        //[HttpPost("upload-files")]
+        //public async Task<IActionResult> UploadFiles([FromForm] List<IFormFile> files)
+        //{
+        //    try
+        //    {
+        //        if (files == null || !files.Any())
+        //        {
+        //            return BadRequest(new ApiResponse<List<FileUploadResponseDto>>
+        //            {
+        //                Success = false,
+        //                Message = "No files provided"
+        //            });
+        //        }
+
+        //        var results = new List<FileUploadResponseDto>();
+
+        //        foreach (var file in files)
+        //        {
+        //            var fileType = _fileService.GetFileType(file.FileName);
+        //            var uploadPath = _fileService.GetUploadPath(fileType);
+        //            var result = await _fileService.UploadFileAsync(file, uploadPath, true);
+        //            results.Add(result);
+        //        }
+
+        //        var response = new ApiResponse<List<FileUploadResponseDto>>
+        //        {
+        //            Success = true,
+        //            Message = $"Uploaded {results.Count(r => r.Success)} of {files.Count} files",
+        //            Data = results
+        //        };
+
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error uploading files");
+        //        return BadRequest(new ApiResponse<List<FileUploadResponseDto>>
+        //        {
+        //            Success = false,
+        //            Message = "File upload failed",
+        //            Errors = new List<string> { ex.Message }
+        //        });
+        //    }
+        //}
+
+        [HttpPost("message-with-files")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> SendMessageWithFiles([FromForm] CreateMessageWithFilesRequestDto request)
         {
             try
             {
-                if (files == null || !files.Any())
+                if (string.IsNullOrWhiteSpace(request.MessageData))
                 {
-                    return BadRequest(new ApiResponse<List<FileUploadResponseDto>>
+                    return BadRequest(new ApiResponse<MessageDto>
                     {
                         Success = false,
-                        Message = "No files provided"
+                        Message = "Message data is required"
                     });
                 }
 
-                var results = new List<FileUploadResponseDto>();
-
-                foreach (var file in files)
+                if (request.Files == null || request.Files.Count == 0)
                 {
-                    var fileType = _fileService.GetFileType(file.FileName);
-                    var uploadPath = _fileService.GetUploadPath(fileType);
-                    var result = await _fileService.UploadFileAsync(file, uploadPath, true);
-                    results.Add(result);
+                    return BadRequest(new ApiResponse<MessageDto>
+                    {
+                        Success = false,
+                        Message = "At least one file is required"
+                    });
                 }
 
-                var response = new ApiResponse<List<FileUploadResponseDto>>
-                {
-                    Success = true,
-                    Message = $"Uploaded {results.Count(r => r.Success)} of {files.Count} files",
-                    Data = results
-                };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error uploading files");
-                return BadRequest(new ApiResponse<List<FileUploadResponseDto>>
-                {
-                    Success = false,
-                    Message = "File upload failed",
-                    Errors = new List<string> { ex.Message }
-                });
-            }
-        }
-        // Controllers/ChatController.cs - ADD THIS METHOD
-        [HttpPost("message-with-files")]
-        public async Task<IActionResult> SendMessageWithFiles([FromForm] string messageData, [FromForm] List<IFormFile> files)
-        {
-            try
-            {
                 var currentUserId = _jwtService.GetUserIdFromClaims(User);
-
-                // Deserialize the message data
-                var createMessageDto = JsonSerializer.Deserialize<CreateMessageDto>(messageData, new JsonSerializerOptions
+                var createMessageDto = JsonSerializer.Deserialize<CreateMessageDto>(request.MessageData, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
@@ -204,11 +222,20 @@ namespace LinkedInApp.Controllers
                     });
                 }
 
-                // Set the files
-                createMessageDto.Files = files;
+                createMessageDto.Files = request.Files;
 
                 var response = await _chatService.SendMessageAsync(createMessageDto, currentUserId);
-                return Ok(response);
+                return response.Success ? Ok(response) : BadRequest(response);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(ex, "Invalid message data for file message");
+                return BadRequest(new ApiResponse<MessageDto>
+                {
+                    Success = false,
+                    Message = "Invalid message data",
+                    Errors = new List<string> { ex.Message }
+                });
             }
             catch (Exception ex)
             {

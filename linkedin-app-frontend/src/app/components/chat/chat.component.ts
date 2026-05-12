@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ChatListComponent } from '../chat-list/chat-list.component';
 import { ChatWindowComponent } from '../chat-window/chat-window.component';
 import { SignalrChatService } from '../../services/signalr-chat.service';
+import { AuthService } from '../../services/auth.service';
 import { Chat } from '../../models/models';
 import { Subscription } from 'rxjs';
 import { HubConnectionState } from '@microsoft/signalr';
@@ -112,9 +113,11 @@ export class ChatComponent implements OnInit, OnDestroy {
   selectedChat: Chat | null = null;
   isMobile = false;
   private subscriptions = new Subscription();
-  authService: any;
 
-  constructor(private signalrChatService: SignalrChatService) {}
+  constructor(
+    private signalrChatService: SignalrChatService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit() {
     this.checkScreenSize();
@@ -123,7 +126,6 @@ export class ChatComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
-    this.signalrChatService.disconnect();
   }
 
   @HostListener('window:resize')

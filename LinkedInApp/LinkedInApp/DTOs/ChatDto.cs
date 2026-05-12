@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http;
 
 namespace LinkedInApp.DTOs
 {
@@ -43,13 +44,15 @@ namespace LinkedInApp.DTOs
         public string MessageType { get; set; } = "text"; // text, image, file, etc.
         public bool IsRead { get; set; }
         public string? FilePath { get; set; }
-        public string? FileName { get; set; } // NEW
-        public string? FileSize { get; set; } // NEW
-        public string? FileType { get; set; } // NEW
-        public string? ThumbnailPath { get; set; } // NEW
+        public string? FileName { get; set; } 
+        public string? FileSize { get; set; } 
+        public string? FileType { get; set; } 
+        public string? ThumbnailPath { get; set; } 
         public DateTime CreatedAt { get; set; }
         public DateTime? ReadAt { get; set; }
         public int? ReplyToMessageId { get; set; } // NEW: Reply functionality
+
+        [JsonIgnore]
         public MessageDto? ReplyToMessage { get; set; } // NEW: Reply message details
         public bool IsEdited { get; set; } // NEW: Edit functionality
         public DateTime? EditedAt { get; set; } // NEW: When it was edited
@@ -77,9 +80,16 @@ namespace LinkedInApp.DTOs
         [JsonIgnore]
         public List<IFormFile>? Files { get; set; }
 
-        [JsonPropertyName("files")]
+        //[JsonPropertyName("files")]
         public List<MessageAttachmentDto>? Attachments { get; set; } = new List<MessageAttachmentDto>();
     }
+
+    public class CreateMessageWithFilesRequestDto
+    {
+        public string MessageData { get; set; } = string.Empty;
+        public List<IFormFile> Files { get; set; } = new List<IFormFile>();
+    }
+
     public class FileUploadResponseDto
     {
         public bool Success { get; set; }

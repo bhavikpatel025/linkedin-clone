@@ -126,6 +126,8 @@ export interface Comment {
   createdDate: string;
   canDelete?: boolean;
   replies?: Reply[]; 
+  repliesCount?: number;
+  repliesLoaded?: boolean;
   showReplies?: boolean; 
   showReplyForm?: boolean;
 }
